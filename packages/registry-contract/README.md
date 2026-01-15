@@ -6,8 +6,7 @@ ink! smart contract for storing stealth meta-addresses on Polkadot Asset Hub.
 
 ```bash
 # Prerequisites
-rustup target add wasm32-unknown-unknown
-cargo install cargo-contract --force
+cargo install cargo-contract --version 6.0.0-beta.1 --force
 
 # Build
 cd packages/registry-contract
@@ -43,7 +42,7 @@ fn update_preferred_chain(
 ) -> Result<(), RegistryError>
 
 // Get registration owner
-fn get_owner(identifier: [u8; 32]) -> Option<AccountId>
+fn get_owner(identifier: [u8; 32]) -> Option<Address>
 ```
 
 ### Errors
@@ -87,7 +86,7 @@ const meta = output?.toHuman();
 
 ## Dependencies
 
-- `ink` 5.x
+- `ink` 6.x (pallet-revive / PolkaVM)
 - `parity-scale-codec`
 - `scale-info`
 

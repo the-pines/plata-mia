@@ -37,7 +37,7 @@ mod registry {
         #[ink(topic)]
         identifier: [u8; 32],
         #[ink(topic)]
-        owner: AccountId,
+        owner: Address,
         spending_key: [u8; 32],
         viewing_key: [u8; 32],
         preferred_chain: u32,
@@ -58,7 +58,7 @@ mod registry {
         /// Maps identifier hash to stealth meta-address
         entries: Mapping<[u8; 32], StealthMetaAddress>,
         /// Maps identifier to owner account (for access control)
-        owners: Mapping<[u8; 32], AccountId>,
+        owners: Mapping<[u8; 32], Address>,
     }
 
     impl Registry {
@@ -121,7 +121,7 @@ mod registry {
 
         /// Returns the owner of a registration
         #[ink(message)]
-        pub fn get_owner(&self, identifier: [u8; 32]) -> Option<AccountId> {
+        pub fn get_owner(&self, identifier: [u8; 32]) -> Option<Address> {
             self.owners.get(identifier)
         }
 
@@ -171,12 +171,12 @@ mod registry {
     mod tests {
         use super::*;
 
-        fn default_accounts() -> ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> {
-            ink::env::test::default_accounts::<ink::env::DefaultEnvironment>()
+        fn default_accounts() -> ink::env::test::DefaultAccounts {
+            ink::env::test::default_accounts()
         }
 
-        fn set_caller(caller: AccountId) {
-            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(caller);
+        fn set_caller(caller: Address) {
+            ink::env::test::set_caller(caller);
         }
 
         fn test_identifier() -> [u8; 32] {
