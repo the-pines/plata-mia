@@ -86,7 +86,7 @@ mod registry {
             preferred_chain: u32,
         ) -> Result<(), RegistryError> {
             // Check if already registered
-            if self.entries.contains(&identifier) {
+            if self.entries.contains(identifier) {
                 return Err(RegistryError::IdentifierAlreadyRegistered);
             }
 
@@ -116,13 +116,13 @@ mod registry {
         /// Returns `None` if the identifier is not registered.
         #[ink(message)]
         pub fn lookup(&self, identifier: [u8; 32]) -> Option<StealthMetaAddress> {
-            self.entries.get(&identifier)
+            self.entries.get(identifier)
         }
 
         /// Returns the owner of a registration
         #[ink(message)]
         pub fn get_owner(&self, identifier: [u8; 32]) -> Option<AccountId> {
-            self.owners.get(&identifier)
+            self.owners.get(identifier)
         }
 
         /// Updates the preferred chain for an existing registration
@@ -137,10 +137,10 @@ mod registry {
             new_chain: u32,
         ) -> Result<(), RegistryError> {
             // Check existence
-            let mut meta = self.entries.get(&identifier).ok_or(RegistryError::NotFound)?;
+            let mut meta = self.entries.get(identifier).ok_or(RegistryError::NotFound)?;
 
             // Check ownership
-            let owner = self.owners.get(&identifier).ok_or(RegistryError::NotFound)?;
+            let owner = self.owners.get(identifier).ok_or(RegistryError::NotFound)?;
             if owner != self.env().caller() {
                 return Err(RegistryError::NotOwner);
             }
