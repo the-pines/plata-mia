@@ -1,9 +1,11 @@
-# Project documentation (kept local)
+# Local documentation
 CLAUDE.md
 TECHNICAL_SPEC.md
 EXECUTION_PLAN.md
-packages/*/README.md
 packages/*/TASKS.md
+
+packages/*/README.md
+!packages/stealth-core/README.md
 
 # Dependencies
 node_modules/
