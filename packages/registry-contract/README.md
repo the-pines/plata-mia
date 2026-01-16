@@ -6,7 +6,8 @@ ink! smart contract for storing stealth meta-addresses on Polkadot Asset Hub.
 
 ```bash
 # Prerequisites
-cargo install cargo-contract --version 6.0.0-beta.1 --force
+rustup target add wasm32-unknown-unknown
+cargo install cargo-contract --force
 
 # Build
 cd packages/registry-contract
@@ -42,7 +43,7 @@ fn update_preferred_chain(
 ) -> Result<(), RegistryError>
 
 // Get registration owner
-fn get_owner(identifier: [u8; 32]) -> Option<Address>
+fn get_owner(identifier: [u8; 32]) -> Option<AccountId>
 ```
 
 ### Errors
@@ -84,27 +85,9 @@ const { output } = await contract.query.lookup(account.address, { gasLimit }, id
 const meta = output?.toHuman();
 ```
 
-## Deployment
-
-### Account Mapping (Required)
-
-ink! v6 uses `pallet-revive` which operates with 20-byte Ethereum addresses (H160) internally. Polkadot accounts are 32-byte (AccountId32). Before deploying or interacting with contracts, you must create a mapping:
-
-**Using Polkadot.js Apps:**
-1. Go to https://polkadot.js.org/apps/?rpc=wss://testnet-passet-hub.polkadot.io
-2. Navigate to Developer → Extrinsics
-3. Select your account
-4. Choose `revive` → `mapAccount()`
-5. Submit & sign
-
-**Who needs to map?**
-- Contract deployers: Yes, must map before deploying
-- Users with Polkadot wallets: Yes, must map before interacting
-- Users with Ethereum wallets (MetaMask): No, they already have H160 addresses
-
 ## Dependencies
 
-- `ink` 6.x (pallet-revive / PolkaVM)
+- `ink` 5.x
 - `parity-scale-codec`
 - `scale-info`
 
