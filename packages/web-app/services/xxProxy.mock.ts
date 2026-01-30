@@ -42,12 +42,6 @@ export async function getAnnouncements(since: number = 0): Promise<Announcement[
   return filtered
 }
 
-export async function clearAnnouncements(): Promise<void> {
+export function clearAnnouncements(): void {
   announcements = []
-  console.log('[xx-proxy mock] Cleared all announcements')
-}
-
-// For debugging
-export function getAllAnnouncements(): Announcement[] {
-  return [...announcements]
 }
