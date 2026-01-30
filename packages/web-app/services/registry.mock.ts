@@ -90,14 +90,8 @@ export async function updatePreferredChain(
   return { success: true }
 }
 
-// Helper to convert bytes to hex
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
-}
-
-// For debugging
-export function getAllRegistrations(): Map<string, StealthMetaAddress> {
-  return new Map(registry)
 }
