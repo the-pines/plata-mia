@@ -35,7 +35,7 @@ func Load() *Config {
 		CertPath:     getEnv("XX_CERT_PATH", ""),
 		SessionDir:   getEnv("XX_SESSION_DIR", "./xx-session"),
 		Password:     getEnv("XX_PASSWORD", ""),
-		ChannelName:  getEnv("XX_CHANNEL_NAME", "plata-mia-announcements"),
+		ChannelName:  getEnv("XX_CHANNEL_NAME", "platamiaannouncements"),
 		ChannelDesc:  getEnv("XX_CHANNEL_DESC", "Stealth payment announcement channel"),
 		ChannelPrint: getEnv("XX_CHANNEL_PRINT", ""),
 		Port:         getEnv("PORT", "8080"),
