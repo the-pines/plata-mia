@@ -1,0 +1,11 @@
+# Binaries
+server
+
+# Session data
+xx-session/
+
+# Certificates (download via script)
+mainnet.crt
+
+# Local logs
+log.md
