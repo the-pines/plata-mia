@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ConnectButton } from '@/components/wallet'
 
 export function Header() {
   return (
@@ -12,17 +13,20 @@ export function Header() {
           </div>
           <span className="font-bold text-xl text-gray">Plata Mia</span>
         </Link>
-        <nav className="flex items-center gap-6">
-          <Link href="/register" className="text-gray-light hover:text-gray transition-colors font-medium">
-            Register
-          </Link>
-          <Link href="/send" className="text-gray-light hover:text-gray transition-colors font-medium">
-            Send
-          </Link>
-          <Link href="/receive" className="text-gray-light hover:text-gray transition-colors font-medium">
-            Receive
-          </Link>
-        </nav>
+        <div className="flex items-center gap-6">
+          <nav className="flex items-center gap-6">
+            <Link href="/register" className="text-gray-light hover:text-gray transition-colors font-medium">
+              Register
+            </Link>
+            <Link href="/send" className="text-gray-light hover:text-gray transition-colors font-medium">
+              Send
+            </Link>
+            <Link href="/receive" className="text-gray-light hover:text-gray transition-colors font-medium">
+              Receive
+            </Link>
+          </nav>
+          <ConnectButton />
+        </div>
       </div>
     </header>
   )
