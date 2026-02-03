@@ -1,0 +1,170 @@
+openapi: 3.0.3
+info:
+  title: xx-proxy API
+  description: REST API bridging Next.js frontend to xx Network cMix protocol for stealth payment announcements
+  version: 1.0.0
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status and network connection state
+      operationId: getHealth
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /announce:
+    post:
+      summary: Broadcast announcement
+      description: Broadcasts a stealth payment announcement to the xx network
+      operationId: postAnnounce
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnounceRequest'
+      responses:
+        '200':
+          description: Announcement broadcasted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnounceResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnounceResponse'
+        '500':
+          description: Broadcast failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnounceResponse'
+
+  /announcements:
+    get:
+      summary: Get announcements
+      description: Retrieves announcements received since a given timestamp
+      operationId: getAnnouncements
+      parameters:
+        - name: since
+          in: query
+          description: Unix timestamp in milliseconds to filter announcements
+          required: false
+          schema:
+            type: integer
+            format: int64
+            default: 0
+      responses:
+        '200':
+          description: List of announcements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnouncementsResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - connected
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: Overall health status
+        connected:
+          type: boolean
+          description: Whether connected to xx network
+
+    AnnounceRequest:
+      type: object
+      required:
+        - r
+        - viewTag
+        - blockHint
+      properties:
+        r:
+          type: string
+          pattern: '^[a-fA-F0-9]{64}$'
+          description: Ephemeral public key R (32 bytes hex encoded)
+          example: "a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd"
+        viewTag:
+          type: integer
+          minimum: 0
+          maximum: 255
+          description: View tag for fast scanning (1 byte)
+          example: 42
+        blockHint:
+          type: integer
+          format: int64
+          description: Block number hint for transaction lookup
+          example: 1234567
+
+    AnnounceResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          description: Whether the announcement was broadcasted
+        error:
+          type: string
+          description: Error message if failed
+
+    AnnouncementDTO:
+      type: object
+      required:
+        - r
+        - viewTag
+        - blockHint
+        - receivedAt
+      properties:
+        r:
+          type: string
+          pattern: '^[a-fA-F0-9]{64}$'
+          description: Ephemeral public key R (32 bytes hex encoded)
+        viewTag:
+          type: integer
+          minimum: 0
+          maximum: 255
+          description: View tag for fast scanning
+        blockHint:
+          type: integer
+          format: int64
+          description: Block number hint
+        receivedAt:
+          type: integer
+          format: int64
+          description: Unix timestamp in milliseconds when received
+
+    AnnouncementsResponse:
+      type: object
+      required:
+        - announcements
+        - count
+      properties:
+        announcements:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnouncementDTO'
+        count:
+          type: integer
+          description: Number of announcements returned
