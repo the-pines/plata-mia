@@ -19,3 +19,5 @@ export const CHAIN_CONFIG = {
 } as const
 
 export const XX_PROXY_URL = process.env.NEXT_PUBLIC_XX_PROXY_URL || 'http://localhost:8080'
+
+export const REGISTRY_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || ''

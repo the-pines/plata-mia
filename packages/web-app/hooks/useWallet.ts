@@ -1,5 +1,6 @@
 'use client'
 
+import { ApiPromise } from '@polkadot/api'
 import { useWalletContext } from '@/contexts/WalletContext'
 
 export interface WalletAccount {
@@ -9,6 +10,7 @@ export interface WalletAccount {
 
 export interface UseWallet {
   account: WalletAccount | null
+  api: ApiPromise | null
   isConnecting: boolean
   isConnected: boolean
   error: string | null

@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react'
+import { ApiPromise } from '@polkadot/api'
 import { CHAIN_CONFIG } from '@/lib/constants'
 
 export interface WalletAccount {
@@ -10,6 +11,7 @@ export interface WalletAccount {
 
 interface WalletContextType {
   account: WalletAccount | null
+  api: ApiPromise | null
   isConnecting: boolean
   isConnected: boolean
   error: string | null
@@ -25,9 +27,10 @@ interface WalletProviderProps {
 
 export function WalletProvider({ children }: WalletProviderProps) {
   const [account, setAccount] = useState<WalletAccount | null>(null)
+  const [api, setApi] = useState<ApiPromise | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const apiRef = useRef<unknown>(null)
+  const apiRef = useRef<ApiPromise | null>(null)
 
   const connect = useCallback(async () => {
     if (typeof window === 'undefined') return
@@ -56,15 +59,17 @@ export function WalletProvider({ children }: WalletProviderProps) {
         name: selectedAccount.meta.name,
       })
 
-      const { ApiPromise, WsProvider } = await import('@polkadot/api')
+      const { ApiPromise: Api, WsProvider } = await import('@polkadot/api')
       const provider = new WsProvider(CHAIN_CONFIG.rpcUrl)
-      const apiInstance = await ApiPromise.create({ provider })
+      const apiInstance = await Api.create({ provider })
       apiRef.current = apiInstance
+      setApi(apiInstance)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to connect wallet'
       setError(message)
       setAccount(null)
       apiRef.current = null
+      setApi(null)
     } finally {
       setIsConnecting(false)
     }
@@ -72,10 +77,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
   const disconnect = useCallback(async () => {
     if (apiRef.current) {
-      const api = apiRef.current as { disconnect: () => Promise<void> }
-      await api.disconnect()
+      await apiRef.current.disconnect()
     }
     setAccount(null)
+    setApi(null)
     apiRef.current = null
     setError(null)
   }, [])
@@ -83,14 +88,14 @@ export function WalletProvider({ children }: WalletProviderProps) {
   useEffect(() => {
     return () => {
       if (apiRef.current) {
-        const api = apiRef.current as { disconnect: () => Promise<void> }
-        api.disconnect()
+        apiRef.current.disconnect()
       }
     }
   }, [])
 
   const value: WalletContextType = {
     account,
+    api,
     isConnecting,
     isConnected: !!account,
     error,
