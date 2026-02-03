@@ -11,6 +11,7 @@ import {
   ScanResult,
 } from '@/hooks/useStealth'
 import { CHAIN_CONFIG } from '@/lib/constants'
+import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 
 interface FoundPayment {
   announcement: Announcement
@@ -23,27 +24,25 @@ export default function ReceivePage() {
   const [spendingSecret, setSpendingSecret] = useState('')
   const [spendingPubkey, setSpendingPubkey] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [scannedCount, setScannedCount] = useState(0)
   const [payments, setPayments] = useState<FoundPayment[]>([])
 
   const handleScan = async () => {
     if (!viewingSecret.trim() || !spendingSecret.trim() || !spendingPubkey.trim()) {
-      setError('Please fill in all fields')
+      showError('Please fill in all fields')
       return
     }
 
     setLoading(true)
-    setError('')
     setPayments([])
     setScannedCount(0)
+    const loadingId = showLoading('Scanning for payments...')
 
     try {
       const v = hexToBytes(viewingSecret)
       const s = hexToBytes(spendingSecret)
       const S = hexToBytes(spendingPubkey)
 
-      // Fetch all announcements (in real app, would use lastScanTimestamp)
       const announcements = await getAnnouncements(0)
       setScannedCount(announcements.length)
 
@@ -52,11 +51,9 @@ export default function ReceivePage() {
       for (const ann of announcements) {
         const R = hexToBytes(ann.R)
 
-        // Try to scan this announcement
         const result = scanAnnouncement(v, S, R, ann.viewTag, CHAIN_CONFIG.ss58Prefix)
 
         if (result) {
-          // Found a payment for us! Derive the spending key
           const derivedKey = deriveSpendingKey(s, v, R)
 
           found.push({
@@ -68,8 +65,16 @@ export default function ReceivePage() {
       }
 
       setPayments(found)
+      dismissToast(loadingId)
+
+      if (found.length > 0) {
+        showSuccess(`Found ${found.length} payment${found.length > 1 ? 's' : ''}!`)
+      } else {
+        showSuccess('Scan complete - no new payments')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Scan failed')
+      dismissToast(loadingId)
+      showError(err instanceof Error ? err.message : 'Scan failed')
     } finally {
       setLoading(false)
     }
@@ -114,7 +119,6 @@ export default function ReceivePage() {
             placeholder="Paste your spending public key (hex)"
             value={spendingPubkey}
             onChange={(e) => setSpendingPubkey(e.target.value)}
-            error={error}
             className="font-mono text-sm"
           />
         </div>

@@ -12,6 +12,7 @@ import {
 } from '@/hooks/useStealth'
 import { useWallet } from '@/hooks/useWallet'
 import { CHAIN_CONFIG } from '@/lib/constants'
+import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 
 type Step = 'lookup' | 'send' | 'done'
 
@@ -23,37 +24,39 @@ export default function SendPage() {
   const [derivedAddress, setDerivedAddress] = useState<DerivedAddress | null>(null)
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [txHash, setTxHash] = useState('')
 
   const handleLookup = async () => {
     if (!hint.trim()) {
-      setError('Please enter a hint')
+      showError('Please enter a hint')
       return
     }
 
     setLoading(true)
-    setError('')
+    const loadingId = showLoading('Looking up recipient...')
 
     try {
       const result = await lookup(hint)
+      dismissToast(loadingId)
+
       if (!result) {
-        setError('Recipient not found')
+        showError('Recipient not found')
         return
       }
 
       setRecipient(result)
 
-      // Derive stealth address
       const derived = deriveStealthAddress(
         hexToBytes(result.spendingKey),
         hexToBytes(result.viewingKey),
         CHAIN_CONFIG.ss58Prefix
       )
       setDerivedAddress(derived)
+      showSuccess('Recipient found')
       setStep('send')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lookup failed')
+      dismissToast(loadingId)
+      showError(err instanceof Error ? err.message : 'Lookup failed')
     } finally {
       setLoading(false)
     }
@@ -61,35 +64,36 @@ export default function SendPage() {
 
   const handleSend = async () => {
     if (!derivedAddress || !amount) {
-      setError('Please enter an amount')
+      showError('Please enter an amount')
       return
     }
 
     const amountNum = parseFloat(amount)
     if (isNaN(amountNum) || amountNum <= 0) {
-      setError('Please enter a valid amount')
+      showError('Please enter a valid amount')
       return
     }
 
     setLoading(true)
-    setError('')
+    const loadingId = showLoading('Sending payment...')
 
     try {
-      // Mock transfer - in real implementation, this would be a Polkadot.js transfer
       const mockBlockNumber = Math.floor(Date.now() / 1000)
       const mockTxHash = '0x' + bytesToHex(crypto.getRandomValues(new Uint8Array(32)))
 
-      // Publish announcement to xx-network (mock)
       await publishAnnouncement(
         bytesToHex(derivedAddress.ephemeralPubkey),
         derivedAddress.viewTag,
         mockBlockNumber
       )
 
+      dismissToast(loadingId)
+      showSuccess('Payment sent successfully')
       setTxHash(mockTxHash)
       setStep('done')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Send failed')
+      dismissToast(loadingId)
+      showError(err instanceof Error ? err.message : 'Send failed')
     } finally {
       setLoading(false)
     }
@@ -101,7 +105,6 @@ export default function SendPage() {
     setRecipient(null)
     setDerivedAddress(null)
     setAmount('')
-    setError('')
     setTxHash('')
   }
 
@@ -156,7 +159,6 @@ export default function SendPage() {
             placeholder="e.g., alice, bob.payments"
             value={hint}
             onChange={(e) => setHint(e.target.value)}
-            error={error}
           />
 
           <Button onClick={handleLookup} loading={loading} size="lg">
@@ -196,7 +198,6 @@ export default function SendPage() {
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              error={error}
             />
 
             <div className="p-4 bg-lemon-light rounded-lg border border-lemon">
