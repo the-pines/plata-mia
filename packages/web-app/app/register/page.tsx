@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { register } from '@/services/registry.mock'
+import { DevModeBadge } from '@/components/DevModeBadge'
+import { register } from '@/services/registry'
 import {
   generateSpendingKeyPair,
   generateViewingKeyPair,
@@ -16,7 +17,7 @@ import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 type Step = 'generate' | 'register' | 'done'
 
 export default function RegisterPage() {
-  const { isConnected } = useWallet()
+  const { isConnected, account, api } = useWallet()
   const [step, setStep] = useState<Step>('generate')
   const [spending, setSpending] = useState<KeyPair | null>(null)
   const [viewing, setViewing] = useState<KeyPair | null>(null)
@@ -38,16 +39,27 @@ export default function RegisterPage() {
       return
     }
 
+    if (!account || !api) {
+      showError('Wallet not connected')
+      return
+    }
+
     setLoading(true)
     const loadingId = showLoading('Registering...')
 
     try {
-      await register(
+      await register({
         hint,
-        bytesToHex(spending.pubkey),
-        bytesToHex(viewing.pubkey),
-        CHAIN_CONFIG.ss58Prefix
-      )
+        spendingKey: bytesToHex(spending.pubkey),
+        viewingKey: bytesToHex(viewing.pubkey),
+        preferredChain: CHAIN_CONFIG.ss58Prefix,
+        callerAddress: account.address,
+        api,
+        onStatusChange: (status) => {
+          dismissToast(loadingId)
+          showLoading(status)
+        },
+      })
       dismissToast(loadingId)
       showSuccess('Hint registered successfully')
       setStep('done')
@@ -62,12 +74,13 @@ export default function RegisterPage() {
   if (!isConnected) {
     return (
       <div className="max-w-2xl mx-auto space-y-8">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-gray">Register</h1>
-          <p className="text-gray-light mt-2">
-            Generate your stealth keys to receive private payments
-          </p>
+          <DevModeBadge />
         </div>
+        <p className="text-gray-light mt-2">
+          Generate your stealth keys to receive private payments
+        </p>
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-lemon rounded-lg flex items-center justify-center">
@@ -90,7 +103,10 @@ export default function RegisterPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray">Register</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray">Register</h1>
+          <DevModeBadge />
+        </div>
         <p className="text-gray-light mt-2">
           Generate your stealth keys to receive private payments
         </p>

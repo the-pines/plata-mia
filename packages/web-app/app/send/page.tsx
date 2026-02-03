@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { lookup, StealthMetaAddress } from '@/services/registry.mock'
+import { DevModeBadge } from '@/components/DevModeBadge'
+import { lookup, StealthMetaAddress } from '@/services/registry'
 import { publishAnnouncement } from '@/services/xxProxy.mock'
 import {
   deriveStealthAddress,
@@ -17,7 +18,7 @@ import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 type Step = 'lookup' | 'send' | 'done'
 
 export default function SendPage() {
-  const { isConnected } = useWallet()
+  const { isConnected, api } = useWallet()
   const [step, setStep] = useState<Step>('lookup')
   const [hint, setHint] = useState('')
   const [recipient, setRecipient] = useState<StealthMetaAddress | null>(null)
@@ -36,7 +37,7 @@ export default function SendPage() {
     const loadingId = showLoading('Looking up recipient...')
 
     try {
-      const result = await lookup(hint)
+      const result = await lookup({ hint, api })
       dismissToast(loadingId)
 
       if (!result) {
@@ -111,12 +112,13 @@ export default function SendPage() {
   if (!isConnected) {
     return (
       <div className="max-w-2xl mx-auto space-y-8">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-gray">Send</h1>
-          <p className="text-gray-light mt-2">
-            Send private payments to stealth addresses
-          </p>
+          <DevModeBadge />
         </div>
+        <p className="text-gray-light mt-2">
+          Send private payments to stealth addresses
+        </p>
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-lemon rounded-lg flex items-center justify-center">
@@ -139,7 +141,10 @@ export default function SendPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray">Send</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray">Send</h1>
+          <DevModeBadge />
+        </div>
         <p className="text-gray-light mt-2">
           Send private payments to stealth addresses
         </p>
