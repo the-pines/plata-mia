@@ -11,6 +11,7 @@ import {
 } from '@/hooks/useStealth'
 import { useWallet } from '@/hooks/useWallet'
 import { CHAIN_CONFIG } from '@/lib/constants'
+import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 
 type Step = 'generate' | 'register' | 'done'
 
@@ -21,7 +22,6 @@ export default function RegisterPage() {
   const [viewing, setViewing] = useState<KeyPair | null>(null)
   const [hint, setHint] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const handleGenerate = () => {
     const spendingKp = generateSpendingKeyPair()
@@ -29,16 +29,17 @@ export default function RegisterPage() {
     setSpending(spendingKp)
     setViewing(viewingKp)
     setStep('register')
+    showSuccess('Keys generated successfully')
   }
 
   const handleRegister = async () => {
     if (!spending || !viewing || !hint.trim()) {
-      setError('Please fill in all fields')
+      showError('Please fill in all fields')
       return
     }
 
     setLoading(true)
-    setError('')
+    const loadingId = showLoading('Registering...')
 
     try {
       await register(
@@ -47,9 +48,12 @@ export default function RegisterPage() {
         bytesToHex(viewing.pubkey),
         CHAIN_CONFIG.ss58Prefix
       )
+      dismissToast(loadingId)
+      showSuccess('Hint registered successfully')
       setStep('done')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      dismissToast(loadingId)
+      showError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -153,7 +157,6 @@ export default function RegisterPage() {
               placeholder="e.g., alice, bob.payments, myname"
               value={hint}
               onChange={(e) => setHint(e.target.value)}
-              error={error}
             />
 
             <Button onClick={handleRegister} loading={loading} size="lg" className="w-full">
