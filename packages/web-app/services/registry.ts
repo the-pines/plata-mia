@@ -1,17 +1,18 @@
 // Registry contract service for stealth address registration
-// Calls Solidity contract on Polkadot Hub TestNet via pallet_revive
+// Supports both MetaMask (direct EVM) and Polkadot.js (via revive.call)
 
 import { blake2b } from '@noble/hashes/blake2b'
+import {
+  createPublicClient,
+  createWalletClient,
+  custom,
+  http,
+  type PublicClient,
+  type WalletClient,
+} from 'viem'
+import { REGISTRY_ABI, REGISTRY_CONTRACT_ADDRESS, polkadotHubTestnet } from '@/lib/contracts'
 import type { ApiPromise } from '@polkadot/api'
 import type { Signer } from '@polkadot/types/types'
-import { REGISTRY_ABI, REGISTRY_CONTRACT_ADDRESS } from '@/lib/contracts'
-import {
-  encodeCall,
-  decodeResult,
-  callContract,
-  queryContract,
-  toBytes32,
-} from './evmSubstrateAdapter'
 
 export interface StealthMetaAddress {
   spendingKey: string
@@ -20,7 +21,6 @@ export interface StealthMetaAddress {
   nickname?: string
 }
 
-// Hash a human-readable hint to 32-byte identifier
 export function hashHint(hint: string): `0x${string}` {
   const encoder = new TextEncoder()
   const hash = blake2b(encoder.encode(hint.toLowerCase().trim()), { dkLen: 32 })
@@ -33,155 +33,163 @@ function bytesToHex(bytes: Uint8Array): string {
     .join('')
 }
 
-export class RegistryService {
-  private api: ApiPromise
-  private contractAddress: string
-
-  constructor(api: ApiPromise, contractAddress: string = REGISTRY_CONTRACT_ADDRESS) {
-    this.api = api
-    this.contractAddress = contractAddress
+function toBytes32(value: string): `0x${string}` {
+  const hex = value.startsWith('0x') ? value.slice(2) : value
+  if (hex.length > 64) {
+    throw new Error('Value too long for bytes32')
   }
+  return `0x${hex.padStart(64, '0')}` as `0x${string}`
+}
 
-  async register(
-    hint: string,
-    spendingKey: string,
-    viewingKey: string,
-    preferredChain: number,
-    nickname: string,
-    signerAddress: string,
-    signer: Signer
-  ): Promise<{ blockHash: string; txHash: string; identifier: string }> {
-    const identifier = hashHint(hint)
-    const spendingKeyBytes32 = toBytes32(spendingKey)
-    const viewingKeyBytes32 = toBytes32(viewingKey)
+// Create a public client for read operations
+function getPublicClient(): PublicClient {
+  return createPublicClient({
+    chain: polkadotHubTestnet,
+    transport: http(),
+  })
+}
 
-    const callData = encodeCall(
-      REGISTRY_ABI,
-      'register',
-      [identifier, spendingKeyBytes32, viewingKeyBytes32, preferredChain, nickname]
-    )
+// Create a wallet client for MetaMask
+function getWalletClient(): WalletClient {
+  if (typeof window === 'undefined' || !window.ethereum) {
+    throw new Error('MetaMask not available')
+  }
+  return createWalletClient({
+    chain: polkadotHubTestnet,
+    transport: custom(window.ethereum),
+  })
+}
 
-    const result = await callContract(
-      this.api,
-      this.contractAddress,
-      callData,
-      signerAddress,
-      signer
-    )
+// Register via MetaMask (direct EVM call)
+export async function registerWithMetaMask(
+  hint: string,
+  spendingKey: string,
+  viewingKey: string,
+  preferredChain: number,
+  nickname: string,
+  account: `0x${string}`
+): Promise<{ txHash: string }> {
+  const client = getWalletClient()
+  const identifier = hashHint(hint)
 
-    return {
-      ...result,
+  const txHash = await client.writeContract({
+    chain: polkadotHubTestnet,
+    address: REGISTRY_CONTRACT_ADDRESS,
+    abi: REGISTRY_ABI,
+    functionName: 'register',
+    args: [
       identifier,
-    }
-  }
-
-  async lookup(hint: string, callerAddress?: string): Promise<StealthMetaAddress | null> {
-    const identifier = hashHint(hint)
-
-    const callData = encodeCall(REGISTRY_ABI, 'lookup', [identifier])
-
-    const resultData = await queryContract(
-      this.api,
-      this.contractAddress,
-      callData,
-      callerAddress
-    )
-
-    const decoded = decodeResult(REGISTRY_ABI, 'lookup', resultData) as [
-      `0x${string}`,
-      `0x${string}`,
-      number,
-      string,
-      boolean
-    ]
-
-    const [spendingKey, viewingKey, preferredChain, nickname, exists] = decoded
-
-    if (!exists) {
-      return null
-    }
-
-    return {
-      spendingKey: spendingKey.slice(2),
-      viewingKey: viewingKey.slice(2),
+      toBytes32(spendingKey),
+      toBytes32(viewingKey),
       preferredChain,
-      nickname: nickname || undefined,
-    }
-  }
+      nickname,
+    ],
+    account,
+  })
 
-  async getOwner(hint: string, callerAddress?: string): Promise<string> {
-    const identifier = hashHint(hint)
+  return { txHash }
+}
 
-    const callData = encodeCall(REGISTRY_ABI, 'getOwner', [identifier])
+// Register via Polkadot.js (revive.call)
+export async function registerWithPolkadotJs(
+  hint: string,
+  spendingKey: string,
+  viewingKey: string,
+  preferredChain: number,
+  nickname: string,
+  api: ApiPromise,
+  signerAddress: string,
+  signer: Signer
+): Promise<{ txHash: string; blockHash: string }> {
+  const { encodeFunctionData } = await import('viem')
 
-    const resultData = await queryContract(
-      this.api,
-      this.contractAddress,
-      callData,
-      callerAddress
-    )
+  const identifier = hashHint(hint)
+  const callData = encodeFunctionData({
+    abi: REGISTRY_ABI,
+    functionName: 'register',
+    args: [
+      identifier,
+      toBytes32(spendingKey),
+      toBytes32(viewingKey),
+      preferredChain,
+      nickname,
+    ],
+  })
 
-    const decoded = decodeResult(REGISTRY_ABI, 'getOwner', resultData) as string
-    return decoded
-  }
+  const gasLimit = 4_294_967_295n
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tx = (api.tx as any).revive.call(
+    { Id: REGISTRY_CONTRACT_ADDRESS },
+    0n,
+    gasLimit,
+    null,
+    callData
+  )
 
-  async updatePreferredChain(
-    hint: string,
-    newChain: number,
-    signerAddress: string,
-    signer: Signer
-  ): Promise<{ blockHash: string; txHash: string }> {
-    const identifier = hashHint(hint)
-
-    const callData = encodeCall(
-      REGISTRY_ABI,
-      'updatePreferredChain',
-      [identifier, newChain]
-    )
-
-    return callContract(
-      this.api,
-      this.contractAddress,
-      callData,
+  return new Promise((resolve, reject) => {
+    tx.signAndSend(
       signerAddress,
-      signer
-    )
+      { signer },
+      ({ status, dispatchError, txHash }: { status: { isInBlock: boolean; asInBlock: { toHex: () => string } }; dispatchError: unknown; txHash: { toHex: () => string } }) => {
+        if (dispatchError) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const err = dispatchError as any
+          if (err.isModule) {
+            const decoded = api.registry.findMetaError(err.asModule)
+            reject(new Error(`${decoded.section}.${decoded.name}: ${decoded.docs.join(' ')}`))
+          } else {
+            reject(new Error(err.toString()))
+          }
+          return
+        }
+        if (status.isInBlock) {
+          resolve({
+            blockHash: status.asInBlock.toHex(),
+            txHash: txHash.toHex(),
+          })
+        }
+      }
+    ).catch(reject)
+  })
+}
+
+// Lookup - works for both wallet types (read-only)
+export async function lookup(hint: string): Promise<StealthMetaAddress | null> {
+  const client = getPublicClient()
+  const identifier = hashHint(hint)
+
+  const result = await client.readContract({
+    address: REGISTRY_CONTRACT_ADDRESS,
+    abi: REGISTRY_ABI,
+    functionName: 'lookup',
+    args: [identifier],
+  }) as [string, string, number, string, boolean]
+
+  const [spendingKey, viewingKey, preferredChain, nickname, exists] = result
+
+  if (!exists) {
+    return null
   }
 
-  async updateNickname(
-    hint: string,
-    newNickname: string,
-    signerAddress: string,
-    signer: Signer
-  ): Promise<{ blockHash: string; txHash: string }> {
-    const identifier = hashHint(hint)
-
-    const callData = encodeCall(
-      REGISTRY_ABI,
-      'updateNickname',
-      [identifier, newNickname]
-    )
-
-    return callContract(
-      this.api,
-      this.contractAddress,
-      callData,
-      signerAddress,
-      signer
-    )
+  return {
+    spendingKey: spendingKey.slice(2),
+    viewingKey: viewingKey.slice(2),
+    preferredChain,
+    nickname: nickname || undefined,
   }
 }
 
-// Singleton instance for use across the app
-let registryInstance: RegistryService | null = null
+// Get owner - works for both wallet types (read-only)
+export async function getOwner(hint: string): Promise<string> {
+  const client = getPublicClient()
+  const identifier = hashHint(hint)
 
-export function getRegistry(api: ApiPromise): RegistryService {
-  if (!registryInstance) {
-    registryInstance = new RegistryService(api)
-  }
-  return registryInstance
-}
+  const owner = await client.readContract({
+    address: REGISTRY_CONTRACT_ADDRESS,
+    abi: REGISTRY_ABI,
+    functionName: 'getOwner',
+    args: [identifier],
+  }) as string
 
-export function clearRegistry(): void {
-  registryInstance = null
+  return owner
 }

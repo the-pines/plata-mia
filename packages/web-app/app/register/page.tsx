@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { register as registerMock } from '@/services/registry.mock'
-import { RegistryService } from '@/services/registry'
+import { registerWithMetaMask, registerWithPolkadotJs } from '@/services/registry'
 import {
   generateSpendingKeyPair,
   generateViewingKeyPair,
@@ -11,14 +10,12 @@ import {
   KeyPair,
 } from '@/hooks/useStealth'
 import { useWallet } from '@/hooks/useWallet'
-import { POLKADOT_HUB_TESTNET } from '@/lib/constants'
+import { polkadotHubTestnet } from '@/lib/contracts'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 import type { ApiPromise } from '@polkadot/api'
 import type { Signer } from '@polkadot/types/types'
 
 type Step = 'generate' | 'register' | 'done'
-
-const USE_REAL_CONTRACT = process.env.NEXT_PUBLIC_USE_REAL_CONTRACT === 'true'
 
 export default function RegisterPage() {
   const { isConnected, account, api, signer, walletType } = useWallet()
@@ -53,30 +50,32 @@ export default function RegisterPage() {
     const loadingId = showLoading('Registering on-chain...')
 
     try {
-      if (USE_REAL_CONTRACT && walletType === 'polkadotjs' && api && signer) {
-        const registry = new RegistryService(api as ApiPromise)
-        await registry.register(
+      if (walletType === 'metamask') {
+        await registerWithMetaMask(
           hint,
           bytesToHex(spending.pubkey),
           bytesToHex(viewing.pubkey),
-          POLKADOT_HUB_TESTNET.ss58Prefix,
+          polkadotHubTestnet.id,
           nickname || hint,
+          account.address as `0x${string}`
+        )
+      } else if (walletType === 'polkadotjs' && api && signer) {
+        await registerWithPolkadotJs(
+          hint,
+          bytesToHex(spending.pubkey),
+          bytesToHex(viewing.pubkey),
+          polkadotHubTestnet.id,
+          nickname || hint,
+          api as ApiPromise,
           account.address,
           signer as Signer
         )
-        dismissToast(loadingId)
-        showSuccess('Hint registered on-chain!')
       } else {
-        await registerMock(
-          hint,
-          bytesToHex(spending.pubkey),
-          bytesToHex(viewing.pubkey),
-          POLKADOT_HUB_TESTNET.ss58Prefix,
-          account.address
-        )
-        dismissToast(loadingId)
-        showSuccess('Hint registered (mock)')
+        throw new Error('Wallet not properly connected')
       }
+
+      dismissToast(loadingId)
+      showSuccess('Hint registered on-chain!')
       setStep('done')
     } catch (err) {
       dismissToast(loadingId)

@@ -1,13 +1,24 @@
-// Registry contract ABI and addresses for pallet_revive integration
+// Registry contract ABI and chain config for Polkadot Hub TestNet
+
+import { defineChain } from 'viem'
 
 export const REGISTRY_CONTRACT_ADDRESS = '0x47568470D89CD2Ea20553ffB08bD630BC95FE4bB' as const
 
-export const POLKADOT_HUB_TESTNET = {
+export const polkadotHubTestnet = defineChain({
+  id: 420420417,
   name: 'Polkadot Hub TestNet',
-  chainId: 420420417,
-  rpcUrl: 'https://eth-rpc-testnet.polkadot.io',
-  wsUrl: 'wss://testnet-rpc.polkadot.io',
-} as const
+  nativeCurrency: {
+    decimals: 10,
+    name: 'DOT',
+    symbol: 'DOT',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://eth-rpc-testnet.polkadot.io'],
+      webSocket: ['wss://testnet-rpc.polkadot.io'],
+    },
+  },
+})
 
 export const REGISTRY_ABI = [
   {

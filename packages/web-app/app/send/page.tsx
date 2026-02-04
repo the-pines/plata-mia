@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { lookup as lookupMock, StealthMetaAddress as MockStealthMetaAddress } from '@/services/registry.mock'
-import { RegistryService, StealthMetaAddress } from '@/services/registry'
+import { lookup, StealthMetaAddress } from '@/services/registry'
 import { publishAnnouncement } from '@/services/xxProxy.mock'
 import {
   deriveStealthAddress,
@@ -14,17 +13,14 @@ import {
 import { useWallet } from '@/hooks/useWallet'
 import { CHAIN_CONFIG } from '@/lib/constants'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
-import type { ApiPromise } from '@polkadot/api'
 
 type Step = 'lookup' | 'send' | 'done'
 
-const USE_REAL_CONTRACT = process.env.NEXT_PUBLIC_USE_REAL_CONTRACT === 'true'
-
 export default function SendPage() {
-  const { isConnected, account, api, walletType } = useWallet()
+  const { isConnected } = useWallet()
   const [step, setStep] = useState<Step>('lookup')
   const [hint, setHint] = useState('')
-  const [recipient, setRecipient] = useState<StealthMetaAddress | MockStealthMetaAddress | null>(null)
+  const [recipient, setRecipient] = useState<StealthMetaAddress | null>(null)
   const [derivedAddress, setDerivedAddress] = useState<DerivedAddress | null>(null)
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,15 +36,7 @@ export default function SendPage() {
     const loadingId = showLoading('Looking up recipient...')
 
     try {
-      let result: StealthMetaAddress | MockStealthMetaAddress | null = null
-
-      if (USE_REAL_CONTRACT && walletType === 'polkadotjs' && api) {
-        const registry = new RegistryService(api as ApiPromise)
-        result = await registry.lookup(hint, account?.address)
-      } else {
-        result = await lookupMock(hint)
-      }
-
+      const result = await lookup(hint)
       dismissToast(loadingId)
 
       if (!result) {
@@ -189,7 +177,7 @@ export default function SendPage() {
                 <span className="text-sm text-gray-lighter">Hint</span>
                 <span className="font-mono text-gray">{hint}</span>
               </div>
-              {'nickname' in recipient && recipient.nickname && (
+              {recipient.nickname && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-lighter">Nickname</span>
                   <span className="text-gray">{recipient.nickname}</span>

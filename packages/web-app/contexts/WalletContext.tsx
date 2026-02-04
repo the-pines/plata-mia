@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react'
-import { POLKADOT_HUB_TESTNET } from '@/lib/constants'
+import { polkadotHubTestnet } from '@/lib/contracts'
 import { isValidEvmAddress } from '@/lib/addressUtils'
 
 export type WalletType = 'metamask' | 'polkadotjs' | null
@@ -52,7 +52,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
   const [signer, setSigner] = useState<unknown | null>(null)
   const apiRef = useRef<unknown>(null)
 
-  // Derive addresses based on wallet type
   const substrateAddress = walletType === 'polkadotjs' && account ? account.address : null
   const evmAddress = walletType === 'metamask' && account ? account.address : null
 
@@ -121,13 +120,15 @@ export function WalletProvider({ children }: WalletProviderProps) {
       })
       setWalletType('polkadotjs')
 
-      // Get signer for later use
       const injector = await web3FromAddress(selectedAccount.address)
       setSigner(injector.signer)
 
-      // Connect to API (Polkadot Hub TestNet for registry contract)
       const { ApiPromise, WsProvider } = await import('@polkadot/api')
-      const provider = new WsProvider(POLKADOT_HUB_TESTNET.wsRpcUrl)
+      const wsUrl = polkadotHubTestnet.rpcUrls.default.webSocket?.[0]
+      if (!wsUrl) {
+        throw new Error('WebSocket URL not configured')
+      }
+      const provider = new WsProvider(wsUrl)
       const apiInstance = await ApiPromise.create({ provider })
       apiRef.current = apiInstance
     } catch (err) {
@@ -163,7 +164,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
   }, [disconnect, connectMetaMask, connectPolkadotJs])
 
-  // Handle MetaMask account changes
   useEffect(() => {
     if (typeof window === 'undefined' || !window.ethereum || walletType !== 'metamask') {
       return
@@ -184,7 +184,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
   }, [walletType, account?.address, disconnect])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (apiRef.current) {
