@@ -6,6 +6,7 @@ packages/*/TASKS.md
 
 packages/*/README.md
 !packages/stealth-core/README.md
+!packages/registry-contract/README.md
 
 # Dependencies
 node_modules/
