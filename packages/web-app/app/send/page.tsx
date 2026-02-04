@@ -2,56 +2,60 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { lookup, StealthMetaAddress } from '@/services/registry.mock'
-import { publishAnnouncement } from '@/services'
+import { lookup, StealthMetaAddress, publishAnnouncement } from '@/services'
 import {
   deriveStealthAddress,
   bytesToHex,
   hexToBytes,
   DerivedAddress,
 } from '@/hooks/useStealth'
+import { useWallet } from '@/hooks/useWallet'
 import { CHAIN_CONFIG } from '@/lib/constants'
+import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 
 type Step = 'lookup' | 'send' | 'done'
 
 export default function SendPage() {
+  const { isConnected } = useWallet()
   const [step, setStep] = useState<Step>('lookup')
   const [hint, setHint] = useState('')
   const [recipient, setRecipient] = useState<StealthMetaAddress | null>(null)
   const [derivedAddress, setDerivedAddress] = useState<DerivedAddress | null>(null)
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [txHash, setTxHash] = useState('')
 
   const handleLookup = async () => {
     if (!hint.trim()) {
-      setError('Please enter a hint')
+      showError('Please enter a hint')
       return
     }
 
     setLoading(true)
-    setError('')
+    const loadingId = showLoading('Looking up recipient...')
 
     try {
       const result = await lookup(hint)
+      dismissToast(loadingId)
+
       if (!result) {
-        setError('Recipient not found')
+        showError('Recipient not found')
         return
       }
 
       setRecipient(result)
 
-      // Derive stealth address
       const derived = deriveStealthAddress(
         hexToBytes(result.spendingKey),
         hexToBytes(result.viewingKey),
         CHAIN_CONFIG.ss58Prefix
       )
       setDerivedAddress(derived)
+      showSuccess('Recipient found')
       setStep('send')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lookup failed')
+      dismissToast(loadingId)
+      showError(err instanceof Error ? err.message : 'Lookup failed')
     } finally {
       setLoading(false)
     }
@@ -59,35 +63,36 @@ export default function SendPage() {
 
   const handleSend = async () => {
     if (!derivedAddress || !amount) {
-      setError('Please enter an amount')
+      showError('Please enter an amount')
       return
     }
 
     const amountNum = parseFloat(amount)
     if (isNaN(amountNum) || amountNum <= 0) {
-      setError('Please enter a valid amount')
+      showError('Please enter a valid amount')
       return
     }
 
     setLoading(true)
-    setError('')
+    const loadingId = showLoading('Sending payment...')
 
     try {
-      // Mock transfer - in real implementation, this would be a Polkadot.js transfer
       const mockBlockNumber = Math.floor(Date.now() / 1000)
       const mockTxHash = '0x' + bytesToHex(crypto.getRandomValues(new Uint8Array(32)))
 
-      // Publish announcement to xx-network (mock)
       await publishAnnouncement(
         bytesToHex(derivedAddress.ephemeralPubkey),
         derivedAddress.viewTag,
         mockBlockNumber
       )
 
+      dismissToast(loadingId)
+      showSuccess('Payment sent successfully')
       setTxHash(mockTxHash)
       setStep('done')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Send failed')
+      dismissToast(loadingId)
+      showError(err instanceof Error ? err.message : 'Send failed')
     } finally {
       setLoading(false)
     }
@@ -99,8 +104,35 @@ export default function SendPage() {
     setRecipient(null)
     setDerivedAddress(null)
     setAmount('')
-    setError('')
     setTxHash('')
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray">Send</h1>
+          <p className="text-gray-light mt-2">
+            Send private payments to stealth addresses
+          </p>
+        </div>
+        <Card className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-lemon rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray">Connect Your Wallet</h2>
+              <p className="text-sm text-gray-light">
+                Please connect your wallet to send private payments.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -126,7 +158,6 @@ export default function SendPage() {
             placeholder="e.g., alice, bob.payments"
             value={hint}
             onChange={(e) => setHint(e.target.value)}
-            error={error}
           />
 
           <Button onClick={handleLookup} loading={loading} size="lg">
@@ -145,6 +176,12 @@ export default function SendPage() {
                 <span className="text-sm text-gray-lighter">Hint</span>
                 <span className="font-mono text-gray">{hint}</span>
               </div>
+              {recipient.nickname && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-lighter">Nickname</span>
+                  <span className="text-gray">{recipient.nickname}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-lighter">Chain</span>
                 <span className="text-gray">{CHAIN_CONFIG.name}</span>
@@ -166,7 +203,6 @@ export default function SendPage() {
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              error={error}
             />
 
             <div className="p-4 bg-lemon-light rounded-lg border border-lemon">

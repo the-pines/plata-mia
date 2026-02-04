@@ -1,2 +1,2 @@
 export * from './xxProxy'
-export * from './registry.mock'
+export * from './registry'

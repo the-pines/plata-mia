@@ -2,24 +2,29 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { register } from '@/services/registry.mock'
+import { registerWithMetaMask, registerWithPolkadotJs } from '@/services/registry'
 import {
   generateSpendingKeyPair,
   generateViewingKeyPair,
   bytesToHex,
   KeyPair,
 } from '@/hooks/useStealth'
-import { CHAIN_CONFIG } from '@/lib/constants'
+import { useWallet } from '@/hooks/useWallet'
+import { polkadotHubTestnet } from '@/lib/contracts'
+import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
+import type { ApiPromise } from '@polkadot/api'
+import type { Signer } from '@polkadot/types/types'
 
 type Step = 'generate' | 'register' | 'done'
 
 export default function RegisterPage() {
+  const { isConnected, account, api, signer, walletType } = useWallet()
   const [step, setStep] = useState<Step>('generate')
   const [spending, setSpending] = useState<KeyPair | null>(null)
   const [viewing, setViewing] = useState<KeyPair | null>(null)
   const [hint, setHint] = useState('')
+  const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const handleGenerate = () => {
     const spendingKp = generateSpendingKeyPair()
@@ -27,30 +32,85 @@ export default function RegisterPage() {
     setSpending(spendingKp)
     setViewing(viewingKp)
     setStep('register')
+    showSuccess('Keys generated successfully')
   }
 
   const handleRegister = async () => {
     if (!spending || !viewing || !hint.trim()) {
-      setError('Please fill in all fields')
+      showError('Please fill in all fields')
+      return
+    }
+
+    if (!account) {
+      showError('Please connect your wallet')
       return
     }
 
     setLoading(true)
-    setError('')
+    const loadingId = showLoading('Registering on-chain...')
 
     try {
-      await register(
-        hint,
-        bytesToHex(spending.pubkey),
-        bytesToHex(viewing.pubkey),
-        CHAIN_CONFIG.ss58Prefix
-      )
+      if (walletType === 'metamask') {
+        await registerWithMetaMask(
+          hint,
+          bytesToHex(spending.pubkey),
+          bytesToHex(viewing.pubkey),
+          polkadotHubTestnet.id,
+          nickname || hint,
+          account.address as `0x${string}`
+        )
+      } else if (walletType === 'polkadotjs' && api && signer) {
+        await registerWithPolkadotJs(
+          hint,
+          bytesToHex(spending.pubkey),
+          bytesToHex(viewing.pubkey),
+          polkadotHubTestnet.id,
+          nickname || hint,
+          api as ApiPromise,
+          account.address,
+          signer as Signer
+        )
+      } else {
+        throw new Error('Wallet not properly connected')
+      }
+
+      dismissToast(loadingId)
+      showSuccess('Hint registered on-chain!')
       setStep('done')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      dismissToast(loadingId)
+      showError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray">Register</h1>
+          <p className="text-gray-light mt-2">
+            Generate your stealth keys to receive private payments
+          </p>
+        </div>
+        <Card className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-lemon rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray">Connect Your Wallet</h2>
+              <p className="text-sm text-gray-light">
+                Please connect your wallet to register your stealth address.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -123,7 +183,13 @@ export default function RegisterPage() {
               placeholder="e.g., alice, bob.payments, myname"
               value={hint}
               onChange={(e) => setHint(e.target.value)}
-              error={error}
+            />
+
+            <Input
+              label="Nickname (optional)"
+              placeholder="Display name for your stealth address"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
             />
 
             <Button onClick={handleRegister} loading={loading} size="lg" className="w-full">
@@ -165,6 +231,7 @@ export default function RegisterPage() {
               setSpending(null)
               setViewing(null)
               setHint('')
+              setNickname('')
             }}>
               Register Another
             </Button>
