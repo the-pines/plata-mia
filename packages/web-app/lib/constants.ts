@@ -18,4 +18,14 @@ export const CHAIN_CONFIG = {
   ss58Prefix: 42,
 } as const
 
+export const POLKADOT_HUB_TESTNET = {
+  name: 'Polkadot Hub TestNet',
+  chainId: 420420417,
+  evmRpcUrl: 'https://eth-rpc-testnet.polkadot.io',
+  wsRpcUrl: 'wss://testnet-rpc.polkadot.io',
+  tokenSymbol: 'DOT',
+  tokenDecimals: 10,
+  ss58Prefix: 0,
+} as const
+
 export const XX_PROXY_URL = process.env.NEXT_PUBLIC_XX_PROXY_URL || 'http://localhost:8080'

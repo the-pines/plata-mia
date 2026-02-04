@@ -1,8 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react'
-import { CHAIN_CONFIG } from '@/lib/constants'
-import { ss58ToH160, isValidEvmAddress } from '@/lib/addressUtils'
+import { POLKADOT_HUB_TESTNET } from '@/lib/constants'
+import { isValidEvmAddress } from '@/lib/addressUtils'
 
 export type WalletType = 'metamask' | 'polkadotjs' | null
 
@@ -125,9 +125,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const injector = await web3FromAddress(selectedAccount.address)
       setSigner(injector.signer)
 
-      // Connect to API
+      // Connect to API (Polkadot Hub TestNet for registry contract)
       const { ApiPromise, WsProvider } = await import('@polkadot/api')
-      const provider = new WsProvider(CHAIN_CONFIG.rpcUrl)
+      const provider = new WsProvider(POLKADOT_HUB_TESTNET.wsRpcUrl)
       const apiInstance = await ApiPromise.create({ provider })
       apiRef.current = apiInstance
     } catch (err) {

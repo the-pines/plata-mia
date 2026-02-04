@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { register } from '@/services/registry.mock'
+import { register as registerMock } from '@/services/registry.mock'
+import { RegistryService } from '@/services/registry'
 import {
   generateSpendingKeyPair,
   generateViewingKeyPair,
@@ -10,17 +11,22 @@ import {
   KeyPair,
 } from '@/hooks/useStealth'
 import { useWallet } from '@/hooks/useWallet'
-import { CHAIN_CONFIG } from '@/lib/constants'
+import { POLKADOT_HUB_TESTNET } from '@/lib/constants'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
+import type { ApiPromise } from '@polkadot/api'
+import type { Signer } from '@polkadot/types/types'
 
 type Step = 'generate' | 'register' | 'done'
 
+const USE_REAL_CONTRACT = process.env.NEXT_PUBLIC_USE_REAL_CONTRACT === 'true'
+
 export default function RegisterPage() {
-  const { isConnected } = useWallet()
+  const { isConnected, account, api, signer, walletType } = useWallet()
   const [step, setStep] = useState<Step>('generate')
   const [spending, setSpending] = useState<KeyPair | null>(null)
   const [viewing, setViewing] = useState<KeyPair | null>(null)
   const [hint, setHint] = useState('')
+  const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleGenerate = () => {
@@ -38,18 +44,39 @@ export default function RegisterPage() {
       return
     }
 
+    if (!account) {
+      showError('Please connect your wallet')
+      return
+    }
+
     setLoading(true)
-    const loadingId = showLoading('Registering...')
+    const loadingId = showLoading('Registering on-chain...')
 
     try {
-      await register(
-        hint,
-        bytesToHex(spending.pubkey),
-        bytesToHex(viewing.pubkey),
-        CHAIN_CONFIG.ss58Prefix
-      )
-      dismissToast(loadingId)
-      showSuccess('Hint registered successfully')
+      if (USE_REAL_CONTRACT && walletType === 'polkadotjs' && api && signer) {
+        const registry = new RegistryService(api as ApiPromise)
+        await registry.register(
+          hint,
+          bytesToHex(spending.pubkey),
+          bytesToHex(viewing.pubkey),
+          POLKADOT_HUB_TESTNET.ss58Prefix,
+          nickname || hint,
+          account.address,
+          signer as Signer
+        )
+        dismissToast(loadingId)
+        showSuccess('Hint registered on-chain!')
+      } else {
+        await registerMock(
+          hint,
+          bytesToHex(spending.pubkey),
+          bytesToHex(viewing.pubkey),
+          POLKADOT_HUB_TESTNET.ss58Prefix,
+          account.address
+        )
+        dismissToast(loadingId)
+        showSuccess('Hint registered (mock)')
+      }
       setStep('done')
     } catch (err) {
       dismissToast(loadingId)
@@ -78,7 +105,7 @@ export default function RegisterPage() {
             <div>
               <h2 className="font-semibold text-gray">Connect Your Wallet</h2>
               <p className="text-sm text-gray-light">
-                Please connect your Polkadot.js wallet to register your stealth address.
+                Please connect your wallet to register your stealth address.
               </p>
             </div>
           </div>
@@ -159,6 +186,13 @@ export default function RegisterPage() {
               onChange={(e) => setHint(e.target.value)}
             />
 
+            <Input
+              label="Nickname (optional)"
+              placeholder="Display name for your stealth address"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+            />
+
             <Button onClick={handleRegister} loading={loading} size="lg" className="w-full">
               Register
             </Button>
@@ -198,6 +232,7 @@ export default function RegisterPage() {
               setSpending(null)
               setViewing(null)
               setHint('')
+              setNickname('')
             }}>
               Register Another
             </Button>
