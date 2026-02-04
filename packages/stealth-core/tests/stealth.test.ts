@@ -11,6 +11,12 @@ import {
   encodeAddress,
   decodeAddress,
   NETWORK_IDS,
+  ss58ToH160,
+  h160ToSs58,
+  isValidEvmAddress,
+  isValidSs58Address,
+  bytesToHex,
+  hexToBytes,
 } from '../src/index.js';
 
 describe('key generation', () => {
@@ -260,5 +266,80 @@ describe('view tag', () => {
     for (const input of testCases) {
       expect(computeViewTag(input)).toBe(input[0]);
     }
+  });
+});
+
+describe('H160 conversion', () => {
+  it('ss58ToH160 produces valid 20-byte hex', () => {
+    const pair = generateSpendingKeyPair();
+    const ss58 = encodeAddress(pair.pubkey, NETWORK_IDS.substrate);
+    const h160 = ss58ToH160(ss58);
+
+    expect(h160).toMatch(/^0x[a-f0-9]{40}$/);
+  });
+
+  it('ss58ToH160 is deterministic', () => {
+    const pair = generateSpendingKeyPair();
+    const ss58 = encodeAddress(pair.pubkey, NETWORK_IDS.substrate);
+    const h160_1 = ss58ToH160(ss58);
+    const h160_2 = ss58ToH160(ss58);
+
+    expect(h160_1).toBe(h160_2);
+  });
+
+  it('h160ToSs58 produces valid SS58 address', () => {
+    const h160 = '0x1234567890abcdef1234567890abcdef12345678';
+    const ss58 = h160ToSs58(h160);
+
+    expect(isValidSs58Address(ss58)).toBe(true);
+  });
+
+  it('h160ToSs58 throws on invalid H160 length', () => {
+    expect(() => h160ToSs58('0x1234')).toThrow('Invalid H160 address');
+  });
+});
+
+describe('address validation', () => {
+  it('isValidEvmAddress accepts valid H160', () => {
+    expect(isValidEvmAddress('0x1234567890abcdef1234567890abcdef12345678')).toBe(true);
+    expect(isValidEvmAddress('0xABCDEF1234567890ABCDEF1234567890ABCDEF12')).toBe(true);
+  });
+
+  it('isValidEvmAddress rejects invalid addresses', () => {
+    expect(isValidEvmAddress('0x1234')).toBe(false);
+    expect(isValidEvmAddress('1234567890abcdef1234567890abcdef12345678')).toBe(false);
+    expect(isValidEvmAddress('0xGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG')).toBe(false);
+  });
+
+  it('isValidSs58Address accepts valid SS58', () => {
+    const pair = generateSpendingKeyPair();
+    const ss58 = encodeAddress(pair.pubkey, NETWORK_IDS.polkadot);
+
+    expect(isValidSs58Address(ss58)).toBe(true);
+  });
+
+  it('isValidSs58Address rejects invalid addresses', () => {
+    expect(isValidSs58Address('invalid')).toBe(false);
+    expect(isValidSs58Address('0x1234567890abcdef')).toBe(false);
+  });
+});
+
+describe('hex utilities', () => {
+  it('bytesToHex converts correctly', () => {
+    expect(bytesToHex(new Uint8Array([0, 1, 255, 16]))).toBe('0001ff10');
+    expect(bytesToHex(new Uint8Array([]))).toBe('');
+  });
+
+  it('hexToBytes converts correctly', () => {
+    expect(hexToBytes('0001ff10')).toEqual(new Uint8Array([0, 1, 255, 16]));
+    expect(hexToBytes('0x0001ff10')).toEqual(new Uint8Array([0, 1, 255, 16]));
+  });
+
+  it('bytesToHex and hexToBytes roundtrip', () => {
+    const original = new Uint8Array([0, 127, 255, 1, 128]);
+    const hex = bytesToHex(original);
+    const result = hexToBytes(hex);
+
+    expect(result).toEqual(original);
   });
 });
