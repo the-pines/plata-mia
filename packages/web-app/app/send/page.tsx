@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { DevModeBadge } from '@/components/DevModeBadge'
 import { lookup, StealthMetaAddress } from '@/services/registry'
 import { publishAnnouncement } from '@/services/xxProxy.mock'
 import {
@@ -18,7 +17,7 @@ import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 type Step = 'lookup' | 'send' | 'done'
 
 export default function SendPage() {
-  const { isConnected, api } = useWallet()
+  const { isConnected } = useWallet()
   const [step, setStep] = useState<Step>('lookup')
   const [hint, setHint] = useState('')
   const [recipient, setRecipient] = useState<StealthMetaAddress | null>(null)
@@ -37,7 +36,7 @@ export default function SendPage() {
     const loadingId = showLoading('Looking up recipient...')
 
     try {
-      const result = await lookup({ hint, api })
+      const result = await lookup(hint)
       dismissToast(loadingId)
 
       if (!result) {
@@ -112,13 +111,12 @@ export default function SendPage() {
   if (!isConnected) {
     return (
       <div className="max-w-2xl mx-auto space-y-8">
-        <div className="flex items-center gap-3">
+        <div>
           <h1 className="text-3xl font-bold text-gray">Send</h1>
-          <DevModeBadge />
+          <p className="text-gray-light mt-2">
+            Send private payments to stealth addresses
+          </p>
         </div>
-        <p className="text-gray-light mt-2">
-          Send private payments to stealth addresses
-        </p>
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-lemon rounded-lg flex items-center justify-center">
@@ -129,7 +127,7 @@ export default function SendPage() {
             <div>
               <h2 className="font-semibold text-gray">Connect Your Wallet</h2>
               <p className="text-sm text-gray-light">
-                Please connect your Polkadot.js wallet to send private payments.
+                Please connect your wallet to send private payments.
               </p>
             </div>
           </div>
@@ -141,10 +139,7 @@ export default function SendPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-gray">Send</h1>
-          <DevModeBadge />
-        </div>
+        <h1 className="text-3xl font-bold text-gray">Send</h1>
         <p className="text-gray-light mt-2">
           Send private payments to stealth addresses
         </p>
@@ -182,6 +177,12 @@ export default function SendPage() {
                 <span className="text-sm text-gray-lighter">Hint</span>
                 <span className="font-mono text-gray">{hint}</span>
               </div>
+              {recipient.nickname && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-lighter">Nickname</span>
+                  <span className="text-gray">{recipient.nickname}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-lighter">Chain</span>
                 <span className="text-gray">{CHAIN_CONFIG.name}</span>
