@@ -42,7 +42,7 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 
 	password := []byte(cfg.Password)
 	sessionExists := false
-	if _, err := os.Stat(cfg.SessionDir); err == nil {
+	if entries, err := os.ReadDir(cfg.SessionDir); err == nil && len(entries) > 0 {
 		sessionExists = true
 	}
 
