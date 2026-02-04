@@ -1,98 +1,86 @@
-# registry-contract
+# Registry Contract
 
-ink! smart contract for storing stealth meta-addresses on Polkadot Asset Hub.
+A stealth meta-address registry for the Plata Mia protocol. Users register their stealth payment credentials, allowing senders to look up recipients and generate stealth addresses.
 
-## Installation
-
-```bash
-# Prerequisites
-rustup target add wasm32-unknown-unknown
-cargo install cargo-contract --force
-
-# Build
-cd packages/registry-contract
-cargo contract build --release
-```
-
-## Test
-
-```bash
-cargo test
-```
-
-## API
+## Contract Interface
 
 ### Functions
 
-```rust
-// Register a new stealth meta-address (caller becomes owner)
-fn register(
-    identifier: [u8; 32],
-    spending_key: [u8; 32],
-    viewing_key: [u8; 32],
-    preferred_chain: u32,
-) -> Result<(), RegistryError>
-
-// Lookup a meta-address by identifier
-fn lookup(identifier: [u8; 32]) -> Option<StealthMetaAddress>
-
-// Update preferred chain (owner only)
-fn update_preferred_chain(
-    identifier: [u8; 32],
-    new_chain: u32,
-) -> Result<(), RegistryError>
-
-// Get registration owner
-fn get_owner(identifier: [u8; 32]) -> Option<AccountId>
-```
-
-### Errors
-
-```rust
-enum RegistryError {
-    IdentifierAlreadyRegistered,  // register() called with an identifier that already exists
-    NotFound,                     // update_preferred_chain() called with unknown identifier
-    NotOwner,                     // update_preferred_chain() called by non-owner
-}
-```
+| Function | Description |
+|----------|-------------|
+| `register(identifier, spendingKey, viewingKey, preferredChain, nickname)` | Register a new stealth meta-address |
+| `lookup(identifier)` | Retrieve a registered stealth meta-address |
+| `getOwner(identifier)` | Get the owner of a registration |
+| `updatePreferredChain(identifier, newChain)` | Update preferred chain (owner only) |
+| `updateNickname(identifier, newNickname)` | Update nickname (owner only) |
 
 ### Events
 
-```rust
-Registered { identifier, owner, spending_key, viewing_key, preferred_chain }
-ChainUpdated { identifier, old_chain, new_chain }
+- `Registered` - Emitted when a new address is registered
+- `ChainUpdated` - Emitted when preferred chain changes
+- `NicknameUpdated` - Emitted when nickname changes
+
+## Deployment
+
+| Network | Chain ID | Address |
+|---------|----------|---------|
+| Polkadot Hub TestNet | 420420417 | `0x47568470D89CD2Ea20553ffB08bD630BC95FE4bB` |
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+
+### Setup
+
+```bash
+cd solidity
+npm install
 ```
 
-## Usage
+### Run Tests
 
-```typescript
-import { ContractPromise } from '@polkadot/api-contract';
-import metadata from './registry.json';
-
-const contract = new ContractPromise(api, metadata, CONTRACT_ADDRESS);
-
-// Register
-await contract.tx.register(
-  { gasLimit },
-  identifierHash,
-  spendingKey,
-  viewingKey,
-  chainId
-).signAndSend(account);
-
-// Lookup
-const { output } = await contract.query.lookup(account.address, { gasLimit }, identifierHash);
-const meta = output?.toHuman();
+```bash
+npm test
 ```
 
-## Dependencies
+### Compile
 
-- `ink` 5.x
-- `parity-scale-codec`
-- `scale-info`
+```bash
+npm run compile
+```
 
-## Notes
+### Deploy
 
-- All data is publicly readable (privacy comes from stealth addresses, not the registry)
-- Entries cannot be deleted (prevents front-running attacks)
-- Only the original registrant can update their entry
+1. Create `.env` file:
+```bash
+cp .env.example .env
+```
+
+2. Add your seed phrase to `.env`:
+```
+DEPLOYER_SURI="your twelve word seed phrase here"
+```
+
+3. Get testnet tokens from [Polkadot Faucet](https://faucet.polkadot.io/)
+   - Network: Polkadot testnet (Paseo)
+   - Chain: AssetHub
+
+4. Deploy:
+```bash
+npm run deploy
+```
+
+## Network Configuration
+
+Add to MetaMask:
+
+| Field | Value |
+|-------|-------|
+| Network Name | Polkadot Hub TestNet |
+| RPC URL | `https://eth-rpc-testnet.polkadot.io` |
+| Chain ID | `420420417` |
+| Symbol | `PAS` |
+| Explorer | `https://blockscout-testnet.polkadot.io` |
