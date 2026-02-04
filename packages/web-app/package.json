@@ -9,11 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@noble/hashes": "^1.4.0",
+    "@plata-mia/stealth-core": "workspace:*",
     "@polkadot/api": "^12.0.0",
     "@polkadot/api-contract": "^16.5.4",
     "@polkadot/extension-dapp": "^0.47.0",
-    "@scure/sr25519": "^1.0.0",
     "next": "^14.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",

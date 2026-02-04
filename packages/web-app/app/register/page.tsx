@@ -7,8 +7,8 @@ import {
   generateSpendingKeyPair,
   generateViewingKeyPair,
   bytesToHex,
-  KeyPair,
-} from '@/hooks/useStealth'
+  type KeyPair,
+} from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
 import { polkadotHubTestnet } from '@/lib/contracts'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'

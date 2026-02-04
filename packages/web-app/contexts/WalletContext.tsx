@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react'
 import { polkadotHubTestnet } from '@/lib/contracts'
-import { isValidEvmAddress } from '@/lib/addressUtils'
+import { isValidEvmAddress } from '@plata-mia/stealth-core'
 
 export type WalletType = 'metamask' | 'polkadotjs' | null
 

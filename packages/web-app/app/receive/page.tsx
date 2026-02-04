@@ -8,8 +8,8 @@ import {
   deriveSpendingKey,
   bytesToHex,
   hexToBytes,
-  ScanResult,
-} from '@/hooks/useStealth'
+  type ScanResult,
+} from '@plata-mia/stealth-core'
 import { CHAIN_CONFIG } from '@/lib/constants'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 

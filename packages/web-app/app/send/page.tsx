@@ -7,8 +7,8 @@ import {
   deriveStealthAddress,
   bytesToHex,
   hexToBytes,
-  DerivedAddress,
-} from '@/hooks/useStealth'
+  type DerivedAddress,
+} from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
 import { CHAIN_CONFIG } from '@/lib/constants'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
