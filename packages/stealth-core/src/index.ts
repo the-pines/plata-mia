@@ -28,4 +28,10 @@ export {
   encodeAddress,
   decodeAddress,
   NETWORK_IDS,
+  ss58ToH160,
+  h160ToSs58,
+  isValidEvmAddress,
+  isValidSs58Address,
+  bytesToHex,
+  hexToBytes,
 } from './encoding.js';
