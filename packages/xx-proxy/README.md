@@ -141,14 +141,18 @@ Announcements are serialized to 42 bytes for network transmission:
 docker build -t xx-proxy .
 docker run -d \
   -v /path/to/mainnet.crt:/app/mainnet.crt:ro \
-  -v xx-proxy-data:/app/data \
   -v xx-proxy-session:/app/xx-session \
+  -v xx-proxy-data:/app/data \
   -e XX_CERT_PATH=/app/mainnet.crt \
   -e XX_PASSWORD=your-password \
   -e CORS_ORIGINS=https://your-domain.com \
   -p 8080:8080 \
   xx-proxy
 ```
+
+**Volume mounts are required** for session and data persistence. The container uses named volumes to store:
+- `xx-proxy-session` - cMix network session (identity, keys)
+- `xx-proxy-data` - Announcements and channel state
 
 ## Persistence
 
