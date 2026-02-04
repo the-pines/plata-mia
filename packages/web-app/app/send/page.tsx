@@ -1,8 +1,19 @@
 'use client'
 
-import { useState } from 'react'
-import { Button, Card, Input, KeyDisplay } from '@/components/ui'
+import { useState, useEffect } from 'react'
+import {
+  Button,
+  Card,
+  Input,
+  KeyDisplay,
+  ChainSelector,
+  TransferStatus,
+} from '@/components/ui'
 import { lookup, StealthMetaAddress, publishAnnouncement } from '@/services'
+import {
+  getTokenGatewayService,
+  TransferProgress,
+} from '@/services/tokenGateway'
 import {
   deriveStealthAddress,
   bytesToHex,
@@ -10,10 +21,17 @@ import {
   type DerivedAddress,
 } from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
-import { CHAIN_CONFIG } from '@/lib/constants'
+import {
+  type ChainConfig,
+  getChainById,
+  isCrossChainTransfer,
+  requiresHyperbridge,
+  DEFAULT_SOURCE_CHAIN_ID,
+  DEFAULT_DEST_CHAIN_ID,
+} from '@/lib/chains'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 
-type Step = 'lookup' | 'send' | 'done'
+type Step = 'lookup' | 'send' | 'transferring' | 'done'
 
 export default function SendPage() {
   const { isConnected } = useWallet()
@@ -25,9 +43,35 @@ export default function SendPage() {
   const [loading, setLoading] = useState(false)
   const [txHash, setTxHash] = useState('')
 
+  // Chain selection
+  const [sourceChainId, setSourceChainId] = useState(DEFAULT_SOURCE_CHAIN_ID)
+  const [destChainId, setDestChainId] = useState(DEFAULT_DEST_CHAIN_ID)
+  const [sourceChain, setSourceChain] = useState<ChainConfig | null>(null)
+  const [destChain, setDestChain] = useState<ChainConfig | null>(null)
+
+  // Transfer status
+  const [transferProgress, setTransferProgress] = useState<TransferProgress | null>(null)
+
+  // Update chain configs when IDs change
+  useEffect(() => {
+    setSourceChain(getChainById(sourceChainId) || null)
+  }, [sourceChainId])
+
+  useEffect(() => {
+    setDestChain(getChainById(destChainId) || null)
+  }, [destChainId])
+
+  const isCrossChain = sourceChain && destChain && isCrossChainTransfer(sourceChain, destChain)
+  const usesHyperbridge = sourceChain && destChain && requiresHyperbridge(sourceChain, destChain)
+
   const handleLookup = async () => {
     if (!hint.trim()) {
       showError('Please enter a hint')
+      return
+    }
+
+    if (!destChain) {
+      showError('Please select a destination chain')
       return
     }
 
@@ -48,7 +92,7 @@ export default function SendPage() {
       const derived = deriveStealthAddress(
         hexToBytes(result.spendingKey),
         hexToBytes(result.viewingKey),
-        CHAIN_CONFIG.ss58Prefix
+        destChain.ss58Prefix
       )
       setDerivedAddress(derived)
       showSuccess('Recipient found')
@@ -62,8 +106,8 @@ export default function SendPage() {
   }
 
   const handleSend = async () => {
-    if (!derivedAddress || !amount) {
-      showError('Please enter an amount')
+    if (!derivedAddress || !amount || !sourceChain || !destChain) {
+      showError('Please fill in all fields')
       return
     }
 
@@ -74,25 +118,74 @@ export default function SendPage() {
     }
 
     setLoading(true)
-    const loadingId = showLoading('Sending payment...')
+    setStep('transferring')
+    setTransferProgress({ status: 'pending' })
 
     try {
-      const mockBlockNumber = Math.floor(Date.now() / 1000)
-      const mockTxHash = '0x' + bytesToHex(crypto.getRandomValues(new Uint8Array(32)))
+      const amountBigInt = BigInt(Math.floor(amountNum * 10 ** sourceChain.tokenDecimals))
 
-      await publishAnnouncement(
-        bytesToHex(derivedAddress.ephemeralPubkey),
-        derivedAddress.viewTag,
-        mockBlockNumber
-      )
+      if (isCrossChain && usesHyperbridge) {
+        // Cross-chain transfer via Hyperbridge
+        const gateway = getTokenGatewayService()
 
-      dismissToast(loadingId)
-      showSuccess('Payment sent successfully')
-      setTxHash(mockTxHash)
+        const result = await gateway.teleport(
+          {
+            sourceChain,
+            destChain,
+            recipient: derivedAddress.address,
+            amount: amountBigInt,
+          },
+          (progress) => {
+            setTransferProgress(progress)
+          }
+        )
+
+        setTxHash(result.txHash)
+
+        // Publish announcement after successful transfer
+        const blockNumber = transferProgress?.sourceBlockNumber || Math.floor(Date.now() / 1000)
+        await publishAnnouncement(
+          bytesToHex(derivedAddress.ephemeralPubkey),
+          derivedAddress.viewTag,
+          blockNumber
+        )
+
+        setTransferProgress({ status: 'completed', txHash: result.txHash })
+      } else {
+        // Same-chain transfer (mock for now)
+        setTransferProgress({ status: 'signing' })
+
+        // Simulate signing delay
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        setTransferProgress({ status: 'source_submitted' })
+
+        // Simulate transaction confirmation
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        const mockBlockNumber = Math.floor(Date.now() / 1000)
+        const mockTxHash = '0x' + bytesToHex(crypto.getRandomValues(new Uint8Array(32)))
+
+        setTransferProgress({
+          status: 'source_finalized',
+          txHash: mockTxHash,
+          sourceBlockNumber: mockBlockNumber,
+        })
+
+        // Publish announcement
+        await publishAnnouncement(
+          bytesToHex(derivedAddress.ephemeralPubkey),
+          derivedAddress.viewTag,
+          mockBlockNumber
+        )
+
+        setTxHash(mockTxHash)
+        setTransferProgress({ status: 'completed', txHash: mockTxHash })
+      }
+
       setStep('done')
     } catch (err) {
-      dismissToast(loadingId)
-      showError(err instanceof Error ? err.message : 'Send failed')
+      const errorMessage = err instanceof Error ? err.message : 'Transfer failed'
+      showError(errorMessage)
+      setTransferProgress({ status: 'failed', error: errorMessage })
     } finally {
       setLoading(false)
     }
@@ -105,6 +198,7 @@ export default function SendPage() {
     setDerivedAddress(null)
     setAmount('')
     setTxHash('')
+    setTransferProgress(null)
   }
 
   if (!isConnected) {
@@ -147,6 +241,35 @@ export default function SendPage() {
       {step === 'lookup' && (
         <Card className="space-y-6">
           <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-gray">Select Chains</h2>
+            <p className="text-gray-lighter text-sm">
+              Choose the source chain (where you&apos;ll send from) and destination chain
+              (where the recipient will receive funds).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <ChainSelector
+              label="Source Chain"
+              value={sourceChainId}
+              onChange={setSourceChainId}
+            />
+            <ChainSelector
+              label="Destination Chain"
+              value={destChainId}
+              onChange={setDestChainId}
+            />
+          </div>
+
+          {isCrossChain && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">
+                Cross-chain transfer via Hyperbridge
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray">Find Recipient</h2>
             <p className="text-gray-lighter text-sm">
               Enter the recipient&apos;s hint to look up their stealth address.
@@ -166,7 +289,7 @@ export default function SendPage() {
         </Card>
       )}
 
-      {step === 'send' && recipient && derivedAddress && (
+      {step === 'send' && recipient && derivedAddress && sourceChain && destChain && (
         <div className="space-y-6">
           <Card className="space-y-4">
             <h2 className="text-xl font-semibold text-gray">Recipient Found</h2>
@@ -183,13 +306,23 @@ export default function SendPage() {
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-lighter">Chain</span>
-                <span className="text-gray">{CHAIN_CONFIG.name}</span>
+                <span className="text-sm text-gray-lighter">Source</span>
+                <span className="text-gray">{sourceChain.name}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-lighter">Destination</span>
+                <span className="text-gray">{destChain.name}</span>
+              </div>
+              {isCrossChain && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-lighter">Transfer Type</span>
+                  <span className="text-blue-600 font-medium">Cross-chain (Hyperbridge)</span>
+                </div>
+              )}
             </div>
 
             <KeyDisplay
-              label="Stealth Address (unique for this payment)"
+              label={`Stealth Address (${destChain.type.toUpperCase()})`}
               value={derivedAddress.address}
             />
           </Card>
@@ -198,52 +331,126 @@ export default function SendPage() {
             <h2 className="text-xl font-semibold text-gray">Send Payment</h2>
 
             <Input
-              label={`Amount (${CHAIN_CONFIG.tokenSymbol})`}
+              label={`Amount (${sourceChain.tokenSymbol})`}
               type="number"
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
 
-            <div className="p-4 bg-lemon-light rounded-lg border border-lemon">
-              <p className="text-sm text-gray">
-                <span className="font-medium">Note:</span> This is a demo with mocked transfers.
-                The announcement will be published but no real tokens will be transferred.
-              </p>
-            </div>
+            {!isCrossChain && (
+              <div className="p-4 bg-lemon-light rounded-lg border border-lemon">
+                <p className="text-sm text-gray">
+                  <span className="font-medium">Note:</span> Same-chain transfers are
+                  currently mocked. Connect a wallet for real transfers.
+                </p>
+              </div>
+            )}
+
+            {isCrossChain && (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-700">
+                  <span className="font-medium">Cross-chain transfer:</span> This will use
+                  Hyperbridge to securely bridge your tokens. Transfer may take a few
+                  minutes.
+                </p>
+              </div>
+            )}
 
             <div className="flex gap-4">
               <Button variant="outline" onClick={reset}>
                 Cancel
               </Button>
               <Button onClick={handleSend} loading={loading} size="lg" className="flex-1">
-                Send {amount ? `${amount} ${CHAIN_CONFIG.tokenSymbol}` : ''}
+                Send {amount ? `${amount} ${sourceChain.tokenSymbol}` : ''}
               </Button>
             </div>
           </Card>
         </div>
       )}
 
-      {step === 'done' && derivedAddress && (
+      {step === 'transferring' && transferProgress && sourceChain && (
+        <Card className="space-y-6">
+          <h2 className="text-xl font-semibold text-gray">Transfer in Progress</h2>
+
+          <TransferStatus
+            status={transferProgress.status}
+            isCrossChain={!!isCrossChain}
+            sourceTxHash={transferProgress.txHash}
+            sourceExplorerUrl={sourceChain.explorerUrl}
+            error={transferProgress.error}
+          />
+
+          {transferProgress.status === 'failed' && (
+            <Button onClick={reset} variant="outline" className="w-full">
+              Try Again
+            </Button>
+          )}
+        </Card>
+      )}
+
+      {step === 'done' && derivedAddress && sourceChain && destChain && (
         <Card variant="highlight" className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray">Payment Sent!</h2>
               <p className="text-gray-light">
-                {amount} {CHAIN_CONFIG.tokenSymbol} sent to {hint}
+                {amount} {sourceChain.tokenSymbol} sent to {hint}
               </p>
             </div>
           </div>
 
           <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-lighter">From</span>
+                <span className="text-gray">{sourceChain.name}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-lighter">To</span>
+                <span className="text-gray">{destChain.name}</span>
+              </div>
+            </div>
             <KeyDisplay label="Stealth Address" value={derivedAddress.address} />
-            <KeyDisplay label="Transaction Hash (mock)" value={txHash} />
+            <KeyDisplay
+              label={isCrossChain ? 'Transaction Hash' : 'Transaction Hash (mock)'}
+              value={txHash}
+            />
           </div>
+
+          {sourceChain.explorerUrl && txHash && (
+            <a
+              href={`${sourceChain.explorerUrl}/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+            >
+              View on {sourceChain.name} Explorer
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </a>
+          )}
 
           <p className="text-sm text-gray-lighter">
             The announcement has been published. The recipient can now scan for this payment.
