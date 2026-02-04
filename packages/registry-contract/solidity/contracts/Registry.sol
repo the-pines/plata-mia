@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-contract Registry {
+import "./IRegistry.sol";
+
+/// @title Registry
+/// @notice Stealth meta-address registry for the Plata Mia protocol
+/// @dev Stores spending and viewing keys for stealth address generation
+contract Registry is IRegistry {
     struct StealthMetaAddress {
         bytes32 spendingKey;
         bytes32 viewingKey;
@@ -12,6 +17,7 @@ contract Registry {
     mapping(bytes32 => StealthMetaAddress) private entries;
     mapping(bytes32 => address) private owners;
 
+    /// @notice Emitted when a new stealth meta-address is registered
     event Registered(
         bytes32 indexed identifier,
         address indexed owner,
@@ -21,22 +27,30 @@ contract Registry {
         string nickname
     );
 
+    /// @notice Emitted when preferred chain is updated
     event ChainUpdated(
         bytes32 indexed identifier,
         uint32 oldChain,
         uint32 newChain
     );
 
+    /// @notice Emitted when nickname is updated
     event NicknameUpdated(
         bytes32 indexed identifier,
         string oldNickname,
         string newNickname
     );
 
+    /// @notice Thrown when identifier is already registered
     error IdentifierAlreadyRegistered();
+
+    /// @notice Thrown when identifier is not found
     error NotFound();
+
+    /// @notice Thrown when caller is not the owner
     error NotOwner();
 
+    /// @inheritdoc IRegistry
     function register(
         bytes32 identifier,
         bytes32 spendingKey,
@@ -59,6 +73,7 @@ contract Registry {
         emit Registered(identifier, msg.sender, spendingKey, viewingKey, preferredChain, nickname);
     }
 
+    /// @inheritdoc IRegistry
     function lookup(bytes32 identifier) external view returns (
         bytes32 spendingKey,
         bytes32 viewingKey,
@@ -73,10 +88,12 @@ contract Registry {
         return (meta.spendingKey, meta.viewingKey, meta.preferredChain, meta.nickname, true);
     }
 
+    /// @inheritdoc IRegistry
     function getOwner(bytes32 identifier) external view returns (address) {
         return owners[identifier];
     }
 
+    /// @inheritdoc IRegistry
     function updatePreferredChain(bytes32 identifier, uint32 newChain) external {
         address owner = owners[identifier];
         if (owner == address(0)) {
@@ -92,6 +109,7 @@ contract Registry {
         emit ChainUpdated(identifier, oldChain, newChain);
     }
 
+    /// @inheritdoc IRegistry
     function updateNickname(bytes32 identifier, string calldata newNickname) external {
         address owner = owners[identifier];
         if (owner == address(0)) {
