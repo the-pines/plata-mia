@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { getAnnouncements, Announcement } from '@/services/xxProxy.mock'
+import { getAnnouncements, Announcement } from '@/services'
 import {
   scanAnnouncement,
   deriveSpendingKey,

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
 import { lookup, StealthMetaAddress } from '@/services/registry.mock'
-import { publishAnnouncement } from '@/services/xxProxy.mock'
+import { publishAnnouncement } from '@/services'
 import {
   deriveStealthAddress,
   bytesToHex,
