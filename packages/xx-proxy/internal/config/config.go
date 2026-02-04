@@ -7,19 +7,22 @@ import (
 	"strings"
 )
 
+const DefaultAnnounceRateLimit = 10.0
+
 type Config struct {
-	NDFURL       string
-	CertPath     string
-	SessionDir   string
-	Password     string
-	ChannelName  string
-	ChannelDesc  string
-	ChannelPrint string // Pre-generated channel PrettyPrint (Option A from plan)
-	ChannelFile  string // File path to persist channel PrettyPrint
-	DataPath     string // Directory for persistent data (announcements)
-	Port         string
-	CORSOrigins  []string
-	LogLevel     int
+	NDFURL             string
+	CertPath           string
+	SessionDir         string
+	Password           string
+	ChannelName        string
+	ChannelDesc        string
+	ChannelPrint       string  // Pre-generated channel PrettyPrint (Option A from plan)
+	ChannelFile        string  // File path to persist channel PrettyPrint
+	DataPath           string  // Directory for persistent data (announcements)
+	Port               string
+	CORSOrigins        []string
+	LogLevel           int
+	AnnounceRateLimit  float64 // Requests per second for /announce endpoint
 }
 
 func Load() *Config {
@@ -33,19 +36,25 @@ func Load() *Config {
 		origins[i] = strings.TrimSpace(origins[i])
 	}
 
+	rateLimit := DefaultAnnounceRateLimit
+	if rate, err := strconv.ParseFloat(getEnv("ANNOUNCE_RATE_LIMIT", ""), 64); err == nil && rate > 0 {
+		rateLimit = rate
+	}
+
 	return &Config{
-		NDFURL:       getEnv("XX_NDF_URL", "https://elixxir-bins.s3.us-west-1.amazonaws.com/ndf/mainnet.json"),
-		CertPath:     getEnv("XX_CERT_PATH", ""),
-		SessionDir:   getEnv("XX_SESSION_DIR", "./xx-session"),
-		Password:     getEnv("XX_PASSWORD", ""),
-		ChannelName:  getEnv("XX_CHANNEL_NAME", "platamiaannouncements"),
-		ChannelDesc:  getEnv("XX_CHANNEL_DESC", "Stealth payment announcement channel"),
-		ChannelPrint: getEnv("XX_CHANNEL_PRINT", ""),
-		ChannelFile:  getEnv("XX_CHANNEL_FILE", "./channel.txt"),
-		DataPath:     getEnv("XX_DATA_PATH", "./data"),
-		Port:         getEnv("PORT", "8080"),
-		CORSOrigins:  origins,
-		LogLevel:     logLevel,
+		NDFURL:            getEnv("XX_NDF_URL", "https://elixxir-bins.s3.us-west-1.amazonaws.com/ndf/mainnet.json"),
+		CertPath:          getEnv("XX_CERT_PATH", ""),
+		SessionDir:        getEnv("XX_SESSION_DIR", "./xx-session"),
+		Password:          getEnv("XX_PASSWORD", ""),
+		ChannelName:       getEnv("XX_CHANNEL_NAME", "platamiaannouncements"),
+		ChannelDesc:       getEnv("XX_CHANNEL_DESC", "Stealth payment announcement channel"),
+		ChannelPrint:      getEnv("XX_CHANNEL_PRINT", ""),
+		ChannelFile:       getEnv("XX_CHANNEL_FILE", "./channel.txt"),
+		DataPath:          getEnv("XX_DATA_PATH", "./data"),
+		Port:              getEnv("PORT", "8080"),
+		CORSOrigins:       origins,
+		LogLevel:          logLevel,
+		AnnounceRateLimit: rateLimit,
 	}
 }
 

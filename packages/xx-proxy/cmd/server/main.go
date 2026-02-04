@@ -92,7 +92,8 @@ func main() {
 	log.Println("Listener started")
 
 	routerCfg := api.RouterConfig{
-		CORSOrigins: cfg.CORSOrigins,
+		CORSOrigins:       cfg.CORSOrigins,
+		AnnounceRateLimit: cfg.AnnounceRateLimit,
 	}
 	router := api.NewRouter(routerCfg, store, client, channel)
 

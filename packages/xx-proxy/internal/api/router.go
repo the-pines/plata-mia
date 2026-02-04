@@ -13,7 +13,8 @@ type Router struct {
 }
 
 type RouterConfig struct {
-	CORSOrigins []string
+	CORSOrigins      []string
+	AnnounceRateLimit float64 // requests per second for /announce endpoint
 }
 
 func NewRouter(
@@ -30,8 +31,6 @@ func NewRouter(
 	corsConfig := cors.DefaultConfig()
 	if len(cfg.CORSOrigins) > 0 {
 		corsConfig.AllowOrigins = cfg.CORSOrigins
-	} else {
-		corsConfig.AllowAllOrigins = true
 	}
 	corsConfig.AllowMethods = []string{"GET", "POST", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
@@ -39,9 +38,15 @@ func NewRouter(
 
 	handlers := NewHandlers(store, client, channel)
 
+	rateLimit := cfg.AnnounceRateLimit
+	if rateLimit <= 0 {
+		rateLimit = 10 // default: 10 requests/second
+	}
+	announceLimiter := NewRateLimiter(rateLimit)
+
 	engine.GET("/health", handlers.Health)
 	engine.GET("/announcements", handlers.GetAnnouncements)
-	engine.POST("/announce", handlers.PostAnnounce)
+	engine.POST("/announce", RateLimitMiddleware(announceLimiter), handlers.PostAnnounce)
 
 	return &Router{
 		engine:   engine,
