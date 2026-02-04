@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"strconv"
 	"strings"
@@ -14,6 +15,8 @@ type Config struct {
 	ChannelName  string
 	ChannelDesc  string
 	ChannelPrint string // Pre-generated channel PrettyPrint (Option A from plan)
+	ChannelFile  string // File path to persist channel PrettyPrint
+	DataPath     string // Directory for persistent data (announcements)
 	Port         string
 	CORSOrigins  []string
 	LogLevel     int
@@ -38,10 +41,25 @@ func Load() *Config {
 		ChannelName:  getEnv("XX_CHANNEL_NAME", "platamiaannouncements"),
 		ChannelDesc:  getEnv("XX_CHANNEL_DESC", "Stealth payment announcement channel"),
 		ChannelPrint: getEnv("XX_CHANNEL_PRINT", ""),
+		ChannelFile:  getEnv("XX_CHANNEL_FILE", "./channel.txt"),
+		DataPath:     getEnv("XX_DATA_PATH", "./data"),
 		Port:         getEnv("PORT", "8080"),
 		CORSOrigins:  origins,
 		LogLevel:     logLevel,
 	}
+}
+
+func (c *Config) Validate() error {
+	if c.CertPath == "" {
+		return errors.New("XX_CERT_PATH is required")
+	}
+	if _, err := os.Stat(c.CertPath); os.IsNotExist(err) {
+		return errors.New("XX_CERT_PATH file does not exist: " + c.CertPath)
+	}
+	if c.Password == "" {
+		return errors.New("XX_PASSWORD is required")
+	}
+	return nil
 }
 
 func getEnv(key, fallback string) string {

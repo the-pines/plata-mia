@@ -20,12 +20,14 @@ WORKDIR /app
 COPY --from=builder /xx-proxy .
 
 RUN adduser -D -u 1000 appuser
-RUN mkdir -p /app/xx-session && chown -R appuser:appuser /app
+RUN mkdir -p /app/xx-session /app/data && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8080
 
 ENV PORT=8080
 ENV XX_SESSION_DIR=/app/xx-session
+ENV XX_DATA_PATH=/app/data
+ENV XX_CHANNEL_FILE=/app/data/channel.txt
 
 ENTRYPOINT ["./xx-proxy"]

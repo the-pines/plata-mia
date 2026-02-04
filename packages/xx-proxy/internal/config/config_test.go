@@ -18,8 +18,8 @@ func TestLoadDefaults(t *testing.T) {
 		t.Errorf("expected default log level 1, got %d", cfg.LogLevel)
 	}
 
-	if cfg.ChannelName != "plata-mia-announcements" {
-		t.Errorf("expected default channel name, got %s", cfg.ChannelName)
+	if cfg.ChannelName != "platamiaannouncements" {
+		t.Errorf("expected default channel name platamiaannouncements, got %s", cfg.ChannelName)
 	}
 
 	if len(cfg.CORSOrigins) != 1 || cfg.CORSOrigins[0] != "http://localhost:3000" {
@@ -70,5 +70,45 @@ func TestLoadInvalidLogLevel(t *testing.T) {
 
 	if cfg.LogLevel != 1 {
 		t.Errorf("expected default log level 1 for invalid input, got %d", cfg.LogLevel)
+	}
+}
+
+func TestValidateMissingCertPath(t *testing.T) {
+	cfg := &Config{CertPath: "", Password: "test"}
+	err := cfg.Validate()
+	if err == nil {
+		t.Error("expected error for missing cert path")
+	}
+}
+
+func TestValidateMissingPassword(t *testing.T) {
+	tmpFile, _ := os.CreateTemp("", "cert")
+	defer os.Remove(tmpFile.Name())
+	tmpFile.Close()
+
+	cfg := &Config{CertPath: tmpFile.Name(), Password: ""}
+	err := cfg.Validate()
+	if err == nil {
+		t.Error("expected error for missing password")
+	}
+}
+
+func TestValidateCertNotExists(t *testing.T) {
+	cfg := &Config{CertPath: "/nonexistent/file.crt", Password: "test"}
+	err := cfg.Validate()
+	if err == nil {
+		t.Error("expected error for non-existent cert file")
+	}
+}
+
+func TestValidateSuccess(t *testing.T) {
+	tmpFile, _ := os.CreateTemp("", "cert")
+	defer os.Remove(tmpFile.Name())
+	tmpFile.Close()
+
+	cfg := &Config{CertPath: tmpFile.Name(), Password: "test"}
+	err := cfg.Validate()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
 	}
 }

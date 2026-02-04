@@ -39,7 +39,7 @@ func (m *mockChannel) Broadcast(payload []byte, tags []string) error {
 }
 
 func setupTestHandlers() (*Handlers, *storage.Store, *mockClient, *mockChannel) {
-	store := storage.NewStore()
+	store := storage.NewStore("")
 	client := &mockClient{healthy: true}
 	channel := &mockChannel{}
 

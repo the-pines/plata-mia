@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,8 +22,22 @@ func main() {
 
 	cfg := config.Load()
 
-	store := storage.NewStore()
-	log.Println("Announcement store initialized")
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Configuration error: %v", err)
+	}
+
+	channelPrint := loadChannelFile(cfg.ChannelFile)
+	if channelPrint != "" {
+		cfg.ChannelPrint = channelPrint
+		log.Println("Loaded channel from file")
+	}
+
+	store := storage.NewStore(cfg.DataPath)
+	if err := store.Load(); err != nil {
+		log.Printf("Warning: failed to load announcements: %v", err)
+	} else {
+		log.Printf("Loaded %d announcements from storage", store.Count())
+	}
 
 	clientCfg := xxclient.ClientConfig{
 		NDFURL:     cfg.NDFURL,
@@ -62,8 +77,12 @@ func main() {
 	}
 
 	if cfg.ChannelPrint == "" {
+		prettyPrint := channel.PrettyPrint()
 		log.Println("New channel created. PrettyPrint for sharing:")
-		log.Println(channel.PrettyPrint())
+		log.Println(prettyPrint)
+		if err := saveChannelFile(cfg.ChannelFile, prettyPrint); err != nil {
+			log.Printf("Warning: failed to save channel file: %v", err)
+		}
 	}
 
 	listener := xxclient.NewListener(store, channel)
@@ -106,4 +125,16 @@ func main() {
 	client.Stop()
 
 	log.Println("Server stopped")
+}
+
+func loadChannelFile(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
+
+func saveChannelFile(path, prettyPrint string) error {
+	return os.WriteFile(path, []byte(prettyPrint), 0600)
 }
