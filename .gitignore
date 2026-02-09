@@ -52,3 +52,9 @@ Cargo.lock
 *.key
 *.pem
 secrets/
+
+# Git worktrees
+*-worktree/
+
+# Task files
+TASK_*.md

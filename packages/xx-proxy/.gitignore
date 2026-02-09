@@ -7,5 +7,9 @@ xx-session/
 # Certificates (download via script)
 mainnet.crt
 
+# Runtime data
+channel.txt
+data/
+
 # Local logs
 log.md
