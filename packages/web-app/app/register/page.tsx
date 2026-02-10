@@ -12,7 +12,7 @@ import {
 import { useWallet } from '@/hooks/useWallet'
 import { polkadotHubTestnet } from '@/lib/contracts'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
-import { storeKeys } from '@/lib/keyStorage'
+import { storeKeys, hasStoredKeys } from '@/lib/keyStorage'
 import type { ApiPromise } from '@polkadot/api'
 import type { Signer } from '@polkadot/api/types'
 
@@ -31,6 +31,13 @@ export default function RegisterPage() {
   const [savePassword, setSavePassword] = useState('')
 
   const handleGenerate = () => {
+    if (account && hasStoredKeys(account.address)) {
+      const confirmed = window.confirm(
+        'You already have saved keys for this wallet. Generating new keys and saving them will overwrite the previous ones. If you lose access to your old keys, any funds sent to those stealth addresses will be unrecoverable.\n\nContinue?'
+      )
+      if (!confirmed) return
+    }
+
     const spendingKp = generateSpendingKeyPair()
     const viewingKp = generateViewingKeyPair()
     setSpending(spendingKp)
