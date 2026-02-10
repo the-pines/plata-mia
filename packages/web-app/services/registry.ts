@@ -60,6 +60,32 @@ function getWalletClient(): WalletClient {
   })
 }
 
+async function ensureChain(): Promise<void> {
+  if (typeof window === 'undefined' || !window.ethereum) return
+  const chainIdHex = `0x${polkadotHubTestnet.id.toString(16)}`
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: chainIdHex }],
+    })
+  } catch (err) {
+    const error = err as { code?: number }
+    if (error.code === 4902) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: chainIdHex,
+          chainName: polkadotHubTestnet.name,
+          nativeCurrency: polkadotHubTestnet.nativeCurrency,
+          rpcUrls: [polkadotHubTestnet.rpcUrls.default.http[0]],
+        }],
+      })
+    } else {
+      throw err
+    }
+  }
+}
+
 // Register via MetaMask (direct EVM call)
 export async function registerWithMetaMask(
   hint: string,
@@ -69,6 +95,7 @@ export async function registerWithMetaMask(
   nickname: string,
   account: `0x${string}`
 ): Promise<{ txHash: string }> {
+  await ensureChain()
   const client = getWalletClient()
   const identifier = hashHint(hint)
 
