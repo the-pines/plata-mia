@@ -91,18 +91,20 @@ export default function ReceivePage() {
       const found: FoundPayment[] = []
 
       for (const ann of announcements) {
-        const R = hexToBytes(ann.R)
+        try {
+          const R = hexToBytes(ann.R)
+          const result = scanAnnouncement(v, S, R, ann.viewTag, CHAIN_CONFIG.ss58Prefix)
 
-        const result = scanAnnouncement(v, S, R, ann.viewTag, CHAIN_CONFIG.ss58Prefix)
-
-        if (result) {
-          const derivedKey = deriveSpendingKey(s, v, R)
-
-          found.push({
-            announcement: ann,
-            scanResult: result,
-            derivedKey: bytesToHex(derivedKey),
-          })
+          if (result) {
+            const derivedKey = deriveSpendingKey(s, v, R)
+            found.push({
+              announcement: ann,
+              scanResult: result,
+              derivedKey: bytesToHex(derivedKey),
+            })
+          }
+        } catch {
+          // Skip announcements with invalid curve points
         }
       }
 
@@ -116,7 +118,12 @@ export default function ReceivePage() {
       }
     } catch (err) {
       dismissToast(loadingId)
-      showError(err instanceof Error ? err.message : 'Scan failed')
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+        showError('Could not reach the announcement server. Make sure xx-proxy is running.')
+      } else {
+        showError(`Scan failed: ${msg}`)
+      }
     } finally {
       setLoading(false)
     }
