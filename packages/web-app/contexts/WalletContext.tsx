@@ -65,6 +65,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
     setError(null)
 
     try {
+      await window.ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }],
+      })
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
       }) as string[]
@@ -81,12 +85,14 @@ export function WalletProvider({ children }: WalletProviderProps) {
       setAccount({ address: selectedAccount })
       setWalletType('metamask')
       setSigner(window.ethereum)
+      localStorage.setItem('plata-mia:wallet', 'metamask')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to connect MetaMask'
       setError(message)
       setAccount(null)
       setWalletType(null)
       setSigner(null)
+      localStorage.removeItem('plata-mia:wallet')
     } finally {
       setIsConnecting(false)
     }
@@ -131,6 +137,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const provider = new WsProvider(wsUrl)
       const apiInstance = await ApiPromise.create({ provider })
       apiRef.current = apiInstance
+      localStorage.setItem('plata-mia:wallet', 'polkadotjs')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to connect wallet'
       setError(message)
@@ -138,6 +145,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       setWalletType(null)
       apiRef.current = null
       setSigner(null)
+      localStorage.removeItem('plata-mia:wallet')
     } finally {
       setIsConnecting(false)
     }
@@ -153,6 +161,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
     apiRef.current = null
     setSigner(null)
     setError(null)
+    localStorage.removeItem('plata-mia:wallet')
   }, [])
 
   const switchWallet = useCallback(async (type: WalletType) => {
@@ -163,6 +172,27 @@ export function WalletProvider({ children }: WalletProviderProps) {
       await connectPolkadotJs()
     }
   }, [disconnect, connectMetaMask, connectPolkadotJs])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('plata-mia:wallet') as WalletType
+    if (!saved || account) return
+
+    if (saved === 'metamask' && window.ethereum) {
+      window.ethereum.request({ method: 'eth_accounts' }).then((result) => {
+        const accounts = result as string[]
+        if (accounts.length > 0 && isValidEvmAddress(accounts[0])) {
+          setAccount({ address: accounts[0] })
+          setWalletType('metamask')
+          setSigner(window.ethereum!)
+        } else {
+          localStorage.removeItem('plata-mia:wallet')
+        }
+      })
+    } else if (saved === 'polkadotjs') {
+      connectPolkadotJs()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.ethereum || walletType !== 'metamask') {
