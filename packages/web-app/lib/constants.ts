@@ -11,10 +11,10 @@ export const COLORS = {
 } as const
 
 export const CHAIN_CONFIG = {
-  name: 'Westend Asset Hub',
-  rpcUrl: 'wss://westend-asset-hub-rpc.polkadot.io',
-  tokenSymbol: 'WND',
-  tokenDecimals: 12,
+  name: 'Polkadot Hub TestNet',
+  rpcUrl: 'https://eth-rpc-testnet.polkadot.io',
+  tokenSymbol: 'DOT',
+  tokenDecimals: 10,
   ss58Prefix: 42,
 } as const
 
@@ -30,9 +30,9 @@ export const HYPERBRIDGE_EXPLORER_URL = 'https://explorer.hyperbridge.network'
 
 // Default chains for cross-chain transfers
 export const DEFAULT_SOURCE_CHAIN =
-  process.env.NEXT_PUBLIC_DEFAULT_SOURCE_CHAIN || 'westend-asset-hub'
+  process.env.NEXT_PUBLIC_DEFAULT_SOURCE_CHAIN || 'polkadot-hub-testnet'
 export const DEFAULT_DEST_CHAIN =
-  process.env.NEXT_PUBLIC_DEFAULT_DEST_CHAIN || 'westend-asset-hub'
+  process.env.NEXT_PUBLIC_DEFAULT_DEST_CHAIN || 'polkadot-hub-testnet'
 
 // Transfer timeout in seconds
 export const DEFAULT_TRANSFER_TIMEOUT = 3600 // 1 hour

@@ -18,6 +18,7 @@ import {
   deriveStealthAddress,
   bytesToHex,
   hexToBytes,
+  ss58ToH160,
   type DerivedAddress,
 } from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
@@ -152,33 +153,63 @@ export default function SendPage() {
 
         setTransferProgress({ status: 'completed', txHash: result.txHash })
       } else {
-        // Same-chain transfer (mock for now)
+        // Same-chain transfer
         setTransferProgress({ status: 'signing' })
 
-        // Simulate signing delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        setTransferProgress({ status: 'source_submitted' })
+        const { createPublicClient, createWalletClient, custom, http } = await import('viem')
 
-        // Simulate transaction confirmation
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        const mockBlockNumber = Math.floor(Date.now() / 1000)
-        const mockTxHash = '0x' + bytesToHex(crypto.getRandomValues(new Uint8Array(32)))
+        if (typeof window === 'undefined' || !window.ethereum) {
+          throw new Error('No wallet detected')
+        }
+
+        const walletClient = createWalletClient({
+          transport: custom(window.ethereum),
+        })
+
+        const publicClient = createPublicClient({
+          transport: http(sourceChain.rpcUrl),
+        })
+
+        const [account] = await walletClient.requestAddresses()
+        if (!account) throw new Error('No account connected')
+
+        const toAddress = ss58ToH160(derivedAddress.address)
+
+        const txHash = await walletClient.sendTransaction({
+          account,
+          to: toAddress,
+          value: amountBigInt,
+          chain: {
+            id: sourceChain.chainId!,
+            name: sourceChain.name,
+            nativeCurrency: {
+              name: sourceChain.tokenSymbol,
+              symbol: sourceChain.tokenSymbol,
+              decimals: sourceChain.tokenDecimals,
+            },
+            rpcUrls: { default: { http: [sourceChain.rpcUrl] } },
+          },
+        })
+
+        setTransferProgress({ status: 'source_submitted', txHash })
+
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+        const blockNumber = Number(receipt.blockNumber)
 
         setTransferProgress({
           status: 'source_finalized',
-          txHash: mockTxHash,
-          sourceBlockNumber: mockBlockNumber,
+          txHash,
+          sourceBlockNumber: blockNumber,
         })
 
-        // Publish announcement
         await publishAnnouncement(
           bytesToHex(derivedAddress.ephemeralPubkey),
           derivedAddress.viewTag,
-          mockBlockNumber
+          blockNumber
         )
 
-        setTxHash(mockTxHash)
-        setTransferProgress({ status: 'completed', txHash: mockTxHash })
+        setTxHash(txHash)
+        setTransferProgress({ status: 'completed', txHash })
       }
 
       setStep('done')
@@ -338,11 +369,11 @@ export default function SendPage() {
               onChange={(e) => setAmount(e.target.value)}
             />
 
-            {!isCrossChain && (
+            {!isCrossChain && sourceChain.type === 'evm' && (
               <div className="p-4 bg-lemon-light rounded-lg border border-lemon">
                 <p className="text-sm text-gray">
-                  <span className="font-medium">Note:</span> Same-chain transfers are
-                  currently mocked. Connect a wallet for real transfers.
+                  <span className="font-medium">Note:</span> This will send a native token
+                  transfer to the derived stealth address via your connected wallet.
                 </p>
               </div>
             )}
@@ -428,7 +459,7 @@ export default function SendPage() {
             </div>
             <KeyDisplay label="Stealth Address" value={derivedAddress.address} />
             <KeyDisplay
-              label={isCrossChain ? 'Transaction Hash' : 'Transaction Hash (mock)'}
+              label="Transaction Hash"
               value={txHash}
             />
           </div>
