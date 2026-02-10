@@ -12,6 +12,7 @@ import {
 import { useWallet } from '@/hooks/useWallet'
 import { polkadotHubTestnet } from '@/lib/contracts'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
+import { storeKeys } from '@/lib/keyStorage'
 import type { ApiPromise } from '@polkadot/api'
 import type { Signer } from '@polkadot/api/types'
 
@@ -25,6 +26,9 @@ export default function RegisterPage() {
   const [hint, setHint] = useState('')
   const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
+  const [storing, setStoring] = useState(false)
+  const [keysSaved, setKeysSaved] = useState(false)
+  const [savePassword, setSavePassword] = useState('')
 
   const handleGenerate = () => {
     const spendingKp = generateSpendingKeyPair()
@@ -33,6 +37,37 @@ export default function RegisterPage() {
     setViewing(viewingKp)
     setStep('register')
     showSuccess('Keys generated successfully')
+  }
+
+  const handleSaveKeys = async () => {
+    if (!spending || !viewing || !account || !walletType || !signer) return
+    if (walletType === 'polkadotjs' && !savePassword) {
+      showError('Please enter a password to encrypt your keys')
+      return
+    }
+
+    setStoring(true)
+    try {
+      await storeKeys(
+        {
+          spendingSecret: bytesToHex(spending.secret),
+          spendingPubkey: bytesToHex(spending.pubkey),
+          viewingSecret: bytesToHex(viewing.secret),
+          viewingPubkey: bytesToHex(viewing.pubkey),
+          hint: hint || undefined,
+        },
+        walletType,
+        signer,
+        account.address,
+        walletType === 'polkadotjs' ? savePassword : undefined
+      )
+      setKeysSaved(true)
+      showSuccess('Keys saved to browser')
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to save keys')
+    } finally {
+      setStoring(false)
+    }
   }
 
   const handleRegister = async () => {
@@ -172,6 +207,46 @@ export default function RegisterPage() {
             </div>
           </Card>
 
+          <Card className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-gray">Save Keys to Browser</h3>
+                <p className="text-sm text-gray-lighter">
+                  Encrypt and store your keys locally so you don&apos;t have to paste them every time.
+                </p>
+              </div>
+              {keysSaved && (
+                <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Saved
+                </span>
+              )}
+            </div>
+            {!keysSaved && (
+              <>
+                {walletType === 'polkadotjs' && (
+                  <Input
+                    label="Encryption Password"
+                    type="password"
+                    placeholder="Choose a password to encrypt your keys"
+                    value={savePassword}
+                    onChange={(e) => setSavePassword(e.target.value)}
+                  />
+                )}
+                <Button
+                  variant="outline"
+                  onClick={handleSaveKeys}
+                  loading={storing}
+                  className="w-full"
+                >
+                  {walletType === 'metamask' ? 'Sign & Save to Browser' : 'Encrypt & Save to Browser'}
+                </Button>
+              </>
+            )}
+          </Card>
+
           <Card className="space-y-6">
             <h2 className="text-xl font-semibold text-gray">Step 3: Register</h2>
             <p className="text-gray-lighter text-sm">
@@ -221,6 +296,26 @@ export default function RegisterPage() {
               Remember: Keep your secret keys safe. You&apos;ll need them to receive and spend payments.
             </p>
           </div>
+
+          {!keysSaved && spending && viewing && (
+            <div className="border-t border-gray-200 pt-4 space-y-3">
+              <p className="text-sm text-gray-light">
+                You haven&apos;t saved your keys to this browser yet. Save them now so you can unlock them on the receive page.
+              </p>
+              {walletType === 'polkadotjs' && (
+                <Input
+                  label="Encryption Password"
+                  type="password"
+                  placeholder="Choose a password to encrypt your keys"
+                  value={savePassword}
+                  onChange={(e) => setSavePassword(e.target.value)}
+                />
+              )}
+              <Button variant="outline" onClick={handleSaveKeys} loading={storing} className="w-full">
+                {walletType === 'metamask' ? 'Sign & Save to Browser' : 'Encrypt & Save to Browser'}
+              </Button>
+            </div>
+          )}
 
           <div className="flex gap-4">
             <Button variant="outline" onClick={() => window.location.href = '/receive'}>

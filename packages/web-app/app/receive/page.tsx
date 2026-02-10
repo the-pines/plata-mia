@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
 import { getAnnouncements, Announcement } from '@/services'
 import {
@@ -12,6 +12,8 @@ import {
 } from '@plata-mia/stealth-core'
 import { CHAIN_CONFIG } from '@/lib/constants'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
+import { useWallet } from '@/hooks/useWallet'
+import { loadKeys, hasStoredKeys } from '@/lib/keyStorage'
 
 interface FoundPayment {
   announcement: Announcement
@@ -20,12 +22,52 @@ interface FoundPayment {
 }
 
 export default function ReceivePage() {
+  const { isConnected, account, signer, walletType } = useWallet()
   const [viewingSecret, setViewingSecret] = useState('')
   const [spendingSecret, setSpendingSecret] = useState('')
   const [spendingPubkey, setSpendingPubkey] = useState('')
   const [loading, setLoading] = useState(false)
   const [scannedCount, setScannedCount] = useState(0)
   const [payments, setPayments] = useState<FoundPayment[]>([])
+  const [hasKeys, setHasKeys] = useState(false)
+  const [keysLoaded, setKeysLoaded] = useState(false)
+  const [unlocking, setUnlocking] = useState(false)
+  const [unlockPassword, setUnlockPassword] = useState('')
+
+  useEffect(() => {
+    if (isConnected && account) {
+      setHasKeys(hasStoredKeys(account.address))
+    } else {
+      setHasKeys(false)
+    }
+  }, [isConnected, account])
+
+  const handleUnlock = async () => {
+    if (!account || !walletType || !signer) return
+    if (walletType === 'polkadotjs' && !unlockPassword) {
+      showError('Please enter your encryption password')
+      return
+    }
+
+    setUnlocking(true)
+    try {
+      const keys = await loadKeys(
+        walletType,
+        signer,
+        account.address,
+        walletType === 'polkadotjs' ? unlockPassword : undefined
+      )
+      setViewingSecret(keys.viewingSecret)
+      setSpendingSecret(keys.spendingSecret)
+      setSpendingPubkey(keys.spendingPubkey)
+      setKeysLoaded(true)
+      showSuccess('Keys loaded')
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to unlock keys')
+    } finally {
+      setUnlocking(false)
+    }
+  }
 
   const handleScan = async () => {
     if (!viewingSecret.trim() || !spendingSecret.trim() || !spendingPubkey.trim()) {
@@ -89,11 +131,43 @@ export default function ReceivePage() {
         </p>
       </div>
 
+      {isConnected && hasKeys && !keysLoaded && (
+        <Card className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-lemon rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray">Saved Keys Found</h3>
+              <p className="text-sm text-gray-lighter">
+                You have encrypted keys stored in this browser.
+              </p>
+            </div>
+          </div>
+          {walletType === 'polkadotjs' && (
+            <Input
+              label="Encryption Password"
+              type="password"
+              placeholder="Enter the password you used when saving"
+              value={unlockPassword}
+              onChange={(e) => setUnlockPassword(e.target.value)}
+            />
+          )}
+          <Button variant="outline" onClick={handleUnlock} loading={unlocking} className="w-full">
+            {walletType === 'metamask' ? 'Sign & Unlock Keys' : 'Unlock Keys'}
+          </Button>
+        </Card>
+      )}
+
       <Card className="space-y-6">
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-gray">Enter Your Keys</h2>
           <p className="text-gray-lighter text-sm">
-            Paste your keys from when you registered to scan for payments.
+            {keysLoaded
+              ? 'Keys loaded from browser storage. You can edit them if needed.'
+              : 'Paste your keys from when you registered to scan for payments.'}
           </p>
         </div>
 

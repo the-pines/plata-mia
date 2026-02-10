@@ -65,6 +65,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
     setError(null)
 
     try {
+      await window.ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }],
+      })
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
       }) as string[]
