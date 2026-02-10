@@ -12,7 +12,7 @@ import {
 } from 'viem'
 import { REGISTRY_ABI, REGISTRY_CONTRACT_ADDRESS, polkadotHubTestnet } from '@/lib/contracts'
 import type { ApiPromise } from '@polkadot/api'
-import type { Signer } from '@polkadot/types/types'
+import type { Signer } from '@polkadot/api/types'
 
 export interface StealthMetaAddress {
   spendingKey: string

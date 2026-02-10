@@ -45,6 +45,9 @@ importers:
       '@hyperbridge/sdk':
         specifier: ^1.5.1
         version: 1.5.1(typescript@5.9.3)(vite@5.4.21(@types/node@20.19.31))
+      '@noble/hashes':
+        specifier: ^1.8.0
+        version: 1.8.0
       '@plata-mia/stealth-core':
         specifier: workspace:*
         version: link:../stealth-core
@@ -2661,6 +2664,7 @@ packages:
   glob@10.3.10:
     resolution: {integrity: sha512-fa46+tv1Ak0UPK1TOy/pZrIybNNt4HCv7SDzwyfiOZkvZLEbjsZkJBPtDHVshZjbecAoAGSC20MjLDG/qr679g==}
     engines: {node: '>=16 || 14 >=14.17'}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@5.0.15:

@@ -13,7 +13,7 @@ import { useWallet } from '@/hooks/useWallet'
 import { polkadotHubTestnet } from '@/lib/contracts'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 import type { ApiPromise } from '@polkadot/api'
-import type { Signer } from '@polkadot/types/types'
+import type { Signer } from '@polkadot/api/types'
 
 type Step = 'generate' | 'register' | 'done'
 

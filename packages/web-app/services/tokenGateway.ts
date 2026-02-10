@@ -286,10 +286,15 @@ export class TokenGatewayService {
               request(id: $id) {
                 id
                 status
-                sourceChain
-                destChain
-                sourceBlockNumber
-                destBlockNumber
+                source
+                dest
+                statusMetadata(first: 10, orderBy: [TIMESTAMP_DESC]) {
+                  nodes {
+                    status
+                    blockNumber
+                    transactionHash
+                  }
+                }
               }
             }
           `,
@@ -304,19 +309,23 @@ export class TokenGatewayService {
         return { status: 'pending', requestId }
       }
 
-      // Map indexer status to our status
       const statusMap: Record<string, TransferStatus> = {
         SOURCE: 'source_finalized',
-        HYPERBRIDGE: 'hyperbridge_relaying',
+        HYPERBRIDGE_DELIVERED: 'hyperbridge_relaying',
         DESTINATION: 'dest_finalized',
-        TIMEOUT: 'timeout',
+        HYPERBRIDGE_TIMED_OUT: 'timeout',
+        TIMED_OUT: 'timeout',
       }
+
+      const metadata = request.statusMetadata?.nodes || []
+      const sourceEvent = metadata.find((m: { status: string }) => m.status === 'SOURCE')
+      const destEvent = metadata.find((m: { status: string }) => m.status === 'DESTINATION')
 
       return {
         status: statusMap[request.status] || 'pending',
         requestId,
-        sourceBlockNumber: request.sourceBlockNumber,
-        destBlockNumber: request.destBlockNumber,
+        sourceBlockNumber: sourceEvent?.blockNumber ? Number(sourceEvent.blockNumber) : undefined,
+        destBlockNumber: destEvent?.blockNumber ? Number(destEvent.blockNumber) : undefined,
       }
     } catch (error) {
       return {
@@ -385,7 +394,7 @@ let gatewayService: TokenGatewayService | null = null
 
 export function getTokenGatewayService(indexerUrl?: string): TokenGatewayService {
   if (!gatewayService) {
-    const url = indexerUrl || process.env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER || 'https://indexer.hyperbridge.network'
+    const url = indexerUrl || process.env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER || 'https://gargantua.indexer.polytope.technology'
     gatewayService = new TokenGatewayService(url)
   }
   return gatewayService

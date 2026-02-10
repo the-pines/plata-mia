@@ -24,7 +24,7 @@ export const REGISTRY_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRES
 
 // Hyperbridge configuration
 export const HYPERBRIDGE_INDEXER_URL =
-  process.env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER || 'https://indexer.hyperbridge.network'
+  process.env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER || 'https://gargantua.indexer.polytope.technology'
 
 export const HYPERBRIDGE_EXPLORER_URL = 'https://explorer.hyperbridge.network'
 

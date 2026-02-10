@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hyperbridge/sdk": "^1.5.1",
+    "@noble/hashes": "^1.8.0",
     "@plata-mia/stealth-core": "workspace:*",
     "@polkadot/api": "^12.0.0",
     "@polkadot/api-contract": "^16.5.4",
