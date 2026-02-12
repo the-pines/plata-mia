@@ -10,14 +10,6 @@ export const COLORS = {
   error: '#EF4444',
 } as const
 
-export const CHAIN_CONFIG = {
-  name: 'Polkadot Hub TestNet',
-  rpcUrl: 'https://eth-rpc-testnet.polkadot.io',
-  tokenSymbol: 'DOT',
-  tokenDecimals: 10,
-  ss58Prefix: 42,
-} as const
-
 export const XX_PROXY_URL = process.env.NEXT_PUBLIC_XX_PROXY_URL || 'http://localhost:8080'
 
 export const REGISTRY_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || ''

@@ -7,6 +7,7 @@ import {
   generateSpendingKeyPair,
   generateViewingKeyPair,
   bytesToHex,
+  pubkeyToBytes32,
   type KeyPair,
 } from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
@@ -92,11 +93,14 @@ export default function RegisterPage() {
     const loadingId = showLoading('Registering on-chain...')
 
     try {
+      const spendBytes32 = pubkeyToBytes32(spending.pubkey)
+      const viewBytes32 = pubkeyToBytes32(viewing.pubkey)
+
       if (walletType === 'metamask') {
         await registerWithMetaMask(
           hint,
-          bytesToHex(spending.pubkey),
-          bytesToHex(viewing.pubkey),
+          spendBytes32,
+          viewBytes32,
           polkadotHubTestnet.id,
           nickname || hint,
           account.address as `0x${string}`
@@ -104,8 +108,8 @@ export default function RegisterPage() {
       } else if (walletType === 'polkadotjs' && api && signer) {
         await registerWithPolkadotJs(
           hint,
-          bytesToHex(spending.pubkey),
-          bytesToHex(viewing.pubkey),
+          spendBytes32,
+          viewBytes32,
           polkadotHubTestnet.id,
           nickname || hint,
           api as ApiPromise,

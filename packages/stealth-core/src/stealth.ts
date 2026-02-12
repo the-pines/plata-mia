@@ -1,120 +1,103 @@
-import { getPublicKey, getSharedSecret, secretFromSeed, HDKD } from '@scure/sr25519';
-import { blake2b } from '@noble/hashes/blake2';
-import { randomBytes } from '@noble/hashes/utils';
-import { encodeAddress } from './encoding.js';
-import type { DerivedAddress, ScanResult } from './types.js';
+import { secp256k1 } from '@noble/curves/secp256k1'
+import { keccak_256 } from '@noble/hashes/sha3'
+import { randomBytes } from '@noble/hashes/utils'
+import { pubkeyToAddress } from './encoding.js'
+import type { DerivedAddress, ScanResult } from './types.js'
 
-/**
- * Compute the view tag from a shared secret (first byte)
- */
-export function computeViewTag(sharedSecret: Uint8Array): number {
-  return sharedSecret[0];
+const G = secp256k1.ProjectivePoint.BASE
+const n = secp256k1.CURVE.n
+
+function bytesToBigInt(bytes: Uint8Array): bigint {
+  let result = 0n
+  for (const byte of bytes) {
+    result = (result << 8n) | BigInt(byte)
+  }
+  return result
 }
 
-/**
- * Hash the shared secret for use as a chain code in derivation
- */
-function hashSharedSecret(sharedSecret: Uint8Array): Uint8Array {
-  return blake2b(sharedSecret, { dkLen: 32 });
+function bigIntToBytes(value: bigint, length: number): Uint8Array {
+  const bytes = new Uint8Array(length)
+  for (let i = length - 1; i >= 0; i--) {
+    bytes[i] = Number(value & 0xffn)
+    value >>= 8n
+  }
+  return bytes
 }
 
-/**
- * Derive a stealth address for sending a payment (Alice's perspective)
- *
- * @param spendingPubkey - Recipient's spending public key (S)
- * @param viewingPubkey - Recipient's viewing public key (V)
- * @param networkId - SS58 network prefix
- * @returns Derived stealth address with ephemeral pubkey and view tag
- */
+// Generate an ephemeral key with even-y parity
+function generateEphemeralKeyPair(): { secret: Uint8Array; pubkey: Uint8Array } {
+  let secret = randomBytes(32)
+  const point = secp256k1.ProjectivePoint.fromPrivateKey(secret)
+  const compressed = point.toRawBytes(true)
+  if (compressed[0] === 0x03) {
+    const negated = n - bytesToBigInt(secret)
+    secret = bigIntToBytes(negated, 32)
+  }
+  return { secret, pubkey: secp256k1.getPublicKey(secret, true) }
+}
+
+function computeSharedHash(ecdh: Uint8Array): Uint8Array {
+  return keccak_256(ecdh)
+}
+
+export function computeViewTag(hash: Uint8Array): number {
+  return hash[0]
+}
+
 export function deriveStealthAddress(
   spendingPubkey: Uint8Array,
-  viewingPubkey: Uint8Array,
-  networkId?: number
+  viewingPubkey: Uint8Array
 ): DerivedAddress {
-  // Generate ephemeral key pair (r, R)
-  const ephemeralSeed = randomBytes(32);
-  const ephemeralSecret = secretFromSeed(ephemeralSeed);
-  const ephemeralPubkey = getPublicKey(ephemeralSecret);
+  const { secret: r, pubkey: R } = generateEphemeralKeyPair()
 
-  // Compute shared secret: ECDH(r, V)
-  const sharedSecret = getSharedSecret(ephemeralSecret, viewingPubkey);
+  const ecdh = secp256k1.getSharedSecret(r, viewingPubkey)
+  const hash = computeSharedHash(ecdh)
+  const viewTag = computeViewTag(hash)
 
-  // Compute view tag
-  const viewTag = computeViewTag(sharedSecret);
+  const hashScalar = bytesToBigInt(hash) % n
+  const S = secp256k1.ProjectivePoint.fromHex(spendingPubkey)
+  const stealthPoint = S.add(G.multiply(hashScalar))
+  const stealthPubkey = stealthPoint.toRawBytes(true)
 
-  // Hash shared secret for chain code
-  const chainCode = hashSharedSecret(sharedSecret);
+  const address = pubkeyToAddress(stealthPubkey)
 
-  // Derive stealth public key: S' = HDKD.publicSoft(S, hash(shared))
-  const stealthPubkey = HDKD.publicSoft(spendingPubkey, chainCode);
-
-  // Encode as SS58 address
-  const address = encodeAddress(stealthPubkey, networkId);
-
-  return {
-    address,
-    pubkey: stealthPubkey,
-    ephemeralPubkey,
-    viewTag,
-  };
+  return { address, pubkey: stealthPubkey, ephemeralPubkey: R, viewTag }
 }
 
-/**
- * Scan an announcement to check if it's for us (Bob's perspective)
- *
- * @param viewingSecret - Our viewing secret key (v)
- * @param spendingPubkey - Our spending public key (S)
- * @param ephemeralPubkey - Ephemeral public key from announcement (R)
- * @param viewTag - View tag from announcement
- * @param networkId - SS58 network prefix
- * @returns Stealth address if the announcement matches, null otherwise
- */
 export function scanAnnouncement(
   viewingSecret: Uint8Array,
   spendingPubkey: Uint8Array,
   ephemeralPubkey: Uint8Array,
-  viewTag: number,
-  networkId?: number
+  viewTag: number
 ): ScanResult | null {
-  // Compute shared secret: ECDH(v, R)
-  const sharedSecret = getSharedSecret(viewingSecret, ephemeralPubkey);
+  const ecdh = secp256k1.getSharedSecret(viewingSecret, ephemeralPubkey)
+  const hash = computeSharedHash(ecdh)
 
-  // Quick rejection using view tag
-  if (computeViewTag(sharedSecret) !== viewTag) {
-    return null;
+  if (computeViewTag(hash) !== viewTag) {
+    return null
   }
 
-  // Hash shared secret for chain code
-  const chainCode = hashSharedSecret(sharedSecret);
+  const hashScalar = bytesToBigInt(hash) % n
+  const S = secp256k1.ProjectivePoint.fromHex(spendingPubkey)
+  const stealthPoint = S.add(G.multiply(hashScalar))
+  const stealthPubkey = stealthPoint.toRawBytes(true)
 
-  // Derive stealth public key: S' = HDKD.publicSoft(S, hash(shared))
-  const stealthPubkey = HDKD.publicSoft(spendingPubkey, chainCode);
+  const address = pubkeyToAddress(stealthPubkey)
 
-  // Encode as SS58 address
-  const address = encodeAddress(stealthPubkey, networkId);
-
-  return { address, pubkey: stealthPubkey };
+  return { address, pubkey: stealthPubkey }
 }
 
-/**
- * Derive the spending key for a matched stealth address (Bob's perspective)
- *
- * @param spendingSecret - Our spending secret key (s)
- * @param viewingSecret - Our viewing secret key (v)
- * @param ephemeralPubkey - Ephemeral public key from announcement (R)
- * @returns Derived secret key for spending from the stealth address
- */
 export function deriveSpendingKey(
   spendingSecret: Uint8Array,
   viewingSecret: Uint8Array,
   ephemeralPubkey: Uint8Array
 ): Uint8Array {
-  // Compute shared secret: ECDH(v, R)
-  const sharedSecret = getSharedSecret(viewingSecret, ephemeralPubkey);
+  const ecdh = secp256k1.getSharedSecret(viewingSecret, ephemeralPubkey)
+  const hash = computeSharedHash(ecdh)
 
-  // Hash shared secret for chain code
-  const chainCode = hashSharedSecret(sharedSecret);
+  const s = bytesToBigInt(spendingSecret)
+  const hashScalar = bytesToBigInt(hash) % n
+  const derived = (s + hashScalar) % n
 
-  // Derive spending secret: s' = HDKD.secretSoft(s, hash(shared))
-  return HDKD.secretSoft(spendingSecret, chainCode);
+  return bigIntToBytes(derived, 32)
 }

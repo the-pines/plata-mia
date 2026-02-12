@@ -1,4 +1,3 @@
-// Types
 export type {
   ChainId,
   KeyPair,
@@ -6,32 +5,26 @@ export type {
   Announcement,
   DerivedAddress,
   ScanResult,
-} from './types.js';
+} from './types.js'
 
-// Key generation
 export {
   generateSpendingKeyPair,
   generateViewingKeyPair,
   createStealthMetaAddress,
-} from './keys.js';
+} from './keys.js'
 
-// Stealth operations
 export {
   computeViewTag,
   deriveStealthAddress,
   scanAnnouncement,
   deriveSpendingKey,
-} from './stealth.js';
+} from './stealth.js'
 
-// Address encoding
 export {
-  encodeAddress,
-  decodeAddress,
-  NETWORK_IDS,
-  ss58ToH160,
-  h160ToSs58,
+  pubkeyToAddress,
+  pubkeyToBytes32,
+  bytes32ToPubkey,
   isValidEvmAddress,
-  isValidSs58Address,
   bytesToHex,
   hexToBytes,
-} from './encoding.js';
+} from './encoding.js'

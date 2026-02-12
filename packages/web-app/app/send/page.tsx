@@ -18,7 +18,6 @@ import {
   deriveStealthAddress,
   bytesToHex,
   hexToBytes,
-  ss58ToH160,
   type DerivedAddress,
 } from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
@@ -92,8 +91,7 @@ export default function SendPage() {
 
       const derived = deriveStealthAddress(
         hexToBytes(result.spendingKey),
-        hexToBytes(result.viewingKey),
-        destChain.ss58Prefix
+        hexToBytes(result.viewingKey)
       )
       setDerivedAddress(derived)
       showSuccess('Recipient found')
@@ -146,7 +144,7 @@ export default function SendPage() {
         // Publish announcement after successful transfer
         const blockNumber = transferProgress?.sourceBlockNumber || Math.floor(Date.now() / 1000)
         await publishAnnouncement(
-          bytesToHex(derivedAddress.ephemeralPubkey),
+          bytesToHex(derivedAddress.ephemeralPubkey.slice(1)),
           derivedAddress.viewTag,
           blockNumber
         )
@@ -173,11 +171,9 @@ export default function SendPage() {
         const [account] = await walletClient.requestAddresses()
         if (!account) throw new Error('No account connected')
 
-        const toAddress = ss58ToH160(derivedAddress.address)
-
         const txHash = await walletClient.sendTransaction({
           account,
-          to: toAddress,
+          to: derivedAddress.address,
           value: amountBigInt,
           chain: {
             id: sourceChain.chainId!,
@@ -203,7 +199,7 @@ export default function SendPage() {
         })
 
         await publishAnnouncement(
-          bytesToHex(derivedAddress.ephemeralPubkey),
+          bytesToHex(derivedAddress.ephemeralPubkey.slice(1)),
           derivedAddress.viewTag,
           blockNumber
         )

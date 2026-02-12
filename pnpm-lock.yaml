@@ -20,15 +20,12 @@ importers:
 
   packages/stealth-core:
     dependencies:
+      '@noble/curves':
+        specifier: ^1.8.0
+        version: 1.9.7
       '@noble/hashes':
         specifier: ^1.7.1
         version: 1.8.0
-      '@polkadot-labs/hdkd-helpers':
-        specifier: ^0.0.11
-        version: 0.0.11
-      '@scure/sr25519':
-        specifier: ^1.0.0
-        version: 1.0.0
     devDependencies:
       '@types/node':
         specifier: ^22.10.7
@@ -535,10 +532,6 @@ packages:
     resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
     engines: {node: ^14.21.3 || >=16}
 
-  '@noble/curves@2.0.1':
-    resolution: {integrity: sha512-vs1Az2OOTBiP4q0pwjW5aF0xp9n4MxVrmkFBxc6EKZc6ddYx5gaZiAsZoq0uRRXWbi3AT/sBqn05eRPtn1JCPw==}
-    engines: {node: '>= 20.19.0'}
-
   '@noble/hashes@1.2.0':
     resolution: {integrity: sha512-FZfhjEDbT5GRswV3C6uvLPHMiVD6lQBmpoX5+eSiPaMTXte/IKqI5dykDxzZB/WBeK/CDuQRBWarPdi3FNY2zQ==}
 
@@ -557,10 +550,6 @@ packages:
   '@noble/hashes@1.8.0':
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
     engines: {node: ^14.21.3 || >=16}
-
-  '@noble/hashes@2.0.1':
-    resolution: {integrity: sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw==}
-    engines: {node: '>= 20.19.0'}
 
   '@noble/secp256k1@1.7.1':
     resolution: {integrity: sha512-hOUk6AyBFmqVrv7k5WAw/LpszxVbj9gGN4JRkIX52fdFAj1UA61KXmZDvqVEm+pOyec3+fIeZB02LYa/pWOArw==}
@@ -759,9 +748,6 @@ packages:
 
   '@polkadot-api/utils@0.1.0':
     resolution: {integrity: sha512-MXzWZeuGxKizPx2Xf/47wx9sr/uxKw39bVJUptTJdsaQn/TGq+z310mHzf1RCGvC1diHM8f593KrnDgc9oNbJA==}
-
-  '@polkadot-labs/hdkd-helpers@0.0.11':
-    resolution: {integrity: sha512-qPlWqC3NNV/2NYc5GEy+Ovi4UBAgkMGvMfyiYuj2BQN4lW59Q1T9coNx0Yp6XzsnJ1ddaF9PWaUtxj3LdM0IDw==}
 
   '@polkadot/api-augment@12.4.2':
     resolution: {integrity: sha512-BkG2tQpUUO0iUm65nSqP8hwHkNfN8jQw8apqflJNt9H8EkEL6v7sqwbLvGqtlxM9wzdxbg7lrWp3oHg4rOP31g==}
@@ -1262,10 +1248,6 @@ packages:
 
   '@scure/sr25519@0.2.0':
     resolution: {integrity: sha512-uUuLP7Z126XdSizKtrCGqYyR3b3hYtJ6Fg/XFUXmc2//k2aXHDLqZwFeXxL97gg4XydPROPVnuaHGF2+xriSKg==}
-
-  '@scure/sr25519@1.0.0':
-    resolution: {integrity: sha512-b+uhK5akMINXZP95F3gJGcb5CMKYxf+q55fwMl0GoBwZDbWolmGNi1FrBSwuaZX5AhqS2byHiAueZgtDNpot2A==}
-    engines: {node: '>= 20.19.0'}
 
   '@sentry/core@5.30.0':
     resolution: {integrity: sha512-TmfrII8w1PQZSZgPpUESqjB+jC6MvZJZdLtE/0hZ+SrnKhW3x5WlYLvTXZpcWePYBku7rl2wn1RZu6uT0qCTeg==}
@@ -3214,10 +3196,6 @@ packages:
   micro-packed@0.7.3:
     resolution: {integrity: sha512-2Milxs+WNC00TRlem41oRswvw31146GiSaoCT7s3Xi2gMUglW5QBeqlQaZeHr5tJx9nm3i57LNXPqxOOaWtTYg==}
 
-  micro-sr25519@0.1.3:
-    resolution: {integrity: sha512-Tw1I3Yjq9XySsU3hsgPVkQTG3NIje070VUWtT4tb9d1tVwQqpCIBH4SM5h4Mxp2Ua4PUyPsot2F40eyJ0QnzTg==}
-    deprecated: Switch to "@scure/sr25519" for security updates
-
   micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
@@ -5153,10 +5131,6 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.8.0
 
-  '@noble/curves@2.0.1':
-    dependencies:
-      '@noble/hashes': 2.0.1
-
   '@noble/hashes@1.2.0': {}
 
   '@noble/hashes@1.3.2': {}
@@ -5166,8 +5140,6 @@ snapshots:
   '@noble/hashes@1.7.2': {}
 
   '@noble/hashes@1.8.0': {}
-
-  '@noble/hashes@2.0.1': {}
 
   '@noble/secp256k1@1.7.1': {}
 
@@ -5415,14 +5387,6 @@ snapshots:
 
   '@polkadot-api/utils@0.1.0':
     optional: true
-
-  '@polkadot-labs/hdkd-helpers@0.0.11':
-    dependencies:
-      '@noble/curves': 1.9.7
-      '@noble/hashes': 1.8.0
-      '@scure/base': 1.2.6
-      micro-sr25519: 0.1.3
-      scale-ts: 1.6.1
 
   '@polkadot/api-augment@12.4.2':
     dependencies:
@@ -6366,11 +6330,6 @@ snapshots:
     dependencies:
       '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
-
-  '@scure/sr25519@1.0.0':
-    dependencies:
-      '@noble/curves': 2.0.1
-      '@noble/hashes': 2.0.1
 
   '@sentry/core@5.30.0':
     dependencies:
@@ -8687,11 +8646,6 @@ snapshots:
   micro-packed@0.7.3:
     dependencies:
       '@scure/base': 1.2.6
-
-  micro-sr25519@0.1.3:
-    dependencies:
-      '@noble/curves': 1.8.2
-      '@noble/hashes': 1.7.2
 
   micromatch@4.0.8:
     dependencies:

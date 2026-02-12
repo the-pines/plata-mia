@@ -198,9 +198,13 @@ export async function lookup(hint: string): Promise<StealthMetaAddress | null> {
     return null
   }
 
+  // Contract stores 32-byte x-coordinates; prepend 0x02 to reconstruct compressed pubkeys
+  const spendHex = spendingKey.startsWith('0x') ? spendingKey.slice(2) : spendingKey
+  const viewHex = viewingKey.startsWith('0x') ? viewingKey.slice(2) : viewingKey
+
   return {
-    spendingKey: spendingKey.slice(2),
-    viewingKey: viewingKey.slice(2),
+    spendingKey: '02' + spendHex,
+    viewingKey: '02' + viewHex,
     preferredChain,
     nickname: nickname || undefined,
   }
