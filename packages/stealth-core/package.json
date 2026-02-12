@@ -16,9 +16,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@noble/hashes": "^1.7.1",
-    "@polkadot-labs/hdkd-helpers": "^0.0.11",
-    "@scure/sr25519": "^1.0.0"
+    "@noble/curves": "^1.8.0",
+    "@noble/hashes": "^1.7.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

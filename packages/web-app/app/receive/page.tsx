@@ -6,11 +6,11 @@ import { getAnnouncements, Announcement } from '@/services'
 import {
   scanAnnouncement,
   deriveSpendingKey,
+  bytes32ToPubkey,
   bytesToHex,
   hexToBytes,
   type ScanResult,
 } from '@plata-mia/stealth-core'
-import { CHAIN_CONFIG } from '@/lib/constants'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 import { useWallet } from '@/hooks/useWallet'
 import { loadKeys, hasStoredKeys } from '@/lib/keyStorage'
@@ -92,8 +92,8 @@ export default function ReceivePage() {
 
       for (const ann of announcements) {
         try {
-          const R = hexToBytes(ann.R)
-          const result = scanAnnouncement(v, S, R, ann.viewTag, CHAIN_CONFIG.ss58Prefix)
+          const R = bytes32ToPubkey(ann.R)
+          const result = scanAnnouncement(v, S, R, ann.viewTag)
 
           if (result) {
             const derivedKey = deriveSpendingKey(s, v, R)
@@ -250,7 +250,7 @@ export default function ReceivePage() {
 
                   <div className="p-3 bg-white rounded border border-lemon">
                     <p className="text-xs text-gray-lighter">
-                      <span className="font-medium text-gray">To spend:</span> Import this private key into a Polkadot wallet to access funds at the stealth address.
+                      <span className="font-medium text-gray">To spend:</span> Import this private key into MetaMask to access funds at the stealth address.
                     </p>
                   </div>
                 </div>
