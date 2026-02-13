@@ -1,4 +1,4 @@
-import type { ChainConfig } from '@/lib/chains'
+import { type ChainConfig, ensureMetaMaskChain } from '@/lib/chains'
 
 export type TransferStatus =
   | 'pending'
@@ -113,8 +113,9 @@ export class TokenGatewayService {
   ): Promise<TeleportResult> {
     const { sourceChain, destChain, recipient, amount, timeout = 3600 } = params
 
-    // Dynamic import viem to avoid SSR issues
-    const { createPublicClient, createWalletClient, custom, http, encodeFunctionData } = await import('viem')
+    await ensureMetaMaskChain(sourceChain)
+
+    const { createPublicClient, createWalletClient, custom, http } = await import('viem')
 
     // Check if window.ethereum is available
     if (typeof window === 'undefined' || !window.ethereum) {

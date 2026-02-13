@@ -26,6 +26,7 @@ import {
   getChainById,
   isCrossChainTransfer,
   requiresHyperbridge,
+  ensureMetaMaskChain,
   DEFAULT_SOURCE_CHAIN_ID,
   DEFAULT_DEST_CHAIN_ID,
 } from '@/lib/chains'
@@ -121,6 +122,7 @@ export default function SendPage() {
     setTransferProgress({ status: 'pending' })
 
     try {
+      await ensureMetaMaskChain(sourceChain)
       const amountBigInt = BigInt(Math.floor(amountNum * 10 ** sourceChain.tokenDecimals))
 
       if (isCrossChain && usesHyperbridge) {
