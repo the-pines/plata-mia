@@ -104,3 +104,36 @@ export function requiresHyperbridge(
 
 export const DEFAULT_SOURCE_CHAIN_ID = 'polkadot-hub-testnet'
 export const DEFAULT_DEST_CHAIN_ID = 'polkadot-hub-testnet'
+
+export async function ensureMetaMaskChain(chain: ChainConfig): Promise<void> {
+  if (typeof window === 'undefined' || !window.ethereum) return
+  if (!chain.chainId) throw new Error(`No chainId configured for ${chain.name}`)
+
+  const chainIdHex = `0x${chain.chainId.toString(16)}`
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: chainIdHex }],
+    })
+  } catch (err) {
+    const error = err as { code?: number }
+    if (error.code === 4902) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: chainIdHex,
+          chainName: chain.name,
+          nativeCurrency: {
+            name: chain.tokenSymbol,
+            symbol: chain.tokenSymbol,
+            decimals: chain.tokenDecimals,
+          },
+          rpcUrls: [chain.rpcUrl],
+          blockExplorerUrls: chain.explorerUrl ? [chain.explorerUrl] : undefined,
+        }],
+      })
+    } else {
+      throw err
+    }
+  }
+}

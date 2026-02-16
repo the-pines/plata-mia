@@ -11,6 +11,7 @@ import {
   type WalletClient,
 } from 'viem'
 import { REGISTRY_ABI, REGISTRY_CONTRACT_ADDRESS, polkadotHubTestnet } from '@/lib/contracts'
+import { ensureMetaMaskChain } from '@/lib/chains'
 import type { ApiPromise } from '@polkadot/api'
 import type { Signer } from '@polkadot/api/types'
 
@@ -61,29 +62,16 @@ function getWalletClient(): WalletClient {
 }
 
 async function ensureChain(): Promise<void> {
-  if (typeof window === 'undefined' || !window.ethereum) return
-  const chainIdHex = `0x${polkadotHubTestnet.id.toString(16)}`
-  try {
-    await window.ethereum.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: chainIdHex }],
-    })
-  } catch (err) {
-    const error = err as { code?: number }
-    if (error.code === 4902) {
-      await window.ethereum.request({
-        method: 'wallet_addEthereumChain',
-        params: [{
-          chainId: chainIdHex,
-          chainName: polkadotHubTestnet.name,
-          nativeCurrency: polkadotHubTestnet.nativeCurrency,
-          rpcUrls: [polkadotHubTestnet.rpcUrls.default.http[0]],
-        }],
-      })
-    } else {
-      throw err
-    }
-  }
+  await ensureMetaMaskChain({
+    id: 'polkadot-hub-testnet',
+    name: polkadotHubTestnet.name,
+    type: 'evm',
+    chainId: polkadotHubTestnet.id,
+    rpcUrl: polkadotHubTestnet.rpcUrls.default.http[0],
+    tokenSymbol: polkadotHubTestnet.nativeCurrency.symbol,
+    tokenDecimals: polkadotHubTestnet.nativeCurrency.decimals,
+    isTestnet: true,
+  })
 }
 
 // Register via MetaMask (direct EVM call)
