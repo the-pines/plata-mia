@@ -15,6 +15,8 @@ export interface ChainConfig {
   isTestnet: boolean
 }
 
+const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? ''
+
 export const GATEWAY_ADDRESSES = {
   ethereum: '0xFd413e3AFe560182C4471F4d143A96d3e259B6dE',
   sepolia: '0xFcDa26cA021d5535C3059547390E6cCd8De7acA6',
@@ -26,7 +28,9 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     name: 'Ethereum',
     type: 'evm',
     chainId: 1,
-    rpcUrl: 'https://eth.llamarpc.com',
+    rpcUrl: ALCHEMY_KEY
+      ? `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`
+      : 'https://eth.llamarpc.com',
     gatewayAddress: GATEWAY_ADDRESSES.ethereum,
     tokenSymbol: 'ETH',
     tokenDecimals: 18,
@@ -50,7 +54,9 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     name: 'Sepolia',
     type: 'evm',
     chainId: 11155111,
-    rpcUrl: 'https://rpc.sepolia.org',
+    rpcUrl: ALCHEMY_KEY
+      ? `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`
+      : 'https://rpc.sepolia.org',
     gatewayAddress: GATEWAY_ADDRESSES.sepolia,
     tokenSymbol: 'ETH',
     tokenDecimals: 18,
