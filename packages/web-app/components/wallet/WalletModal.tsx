@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { WalletType } from '@/contexts/WalletContext'
+import { type WalletType } from '@/stores/walletStore'
 
 interface WalletOption {
   type: WalletType

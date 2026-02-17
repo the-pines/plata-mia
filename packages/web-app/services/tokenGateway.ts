@@ -34,37 +34,61 @@ export interface TeleportResult {
   requestId: string
 }
 
-// Token Gateway ABI - minimal interface for teleport
+// Token Gateway ABI – verified against 0xFcDa26cA021d5535C3059547390E6cCd8De7acA6 (Sepolia)
 const TOKEN_GATEWAY_ABI = [
   {
     name: 'teleport',
     type: 'function',
     inputs: [
-      { name: 'params', type: 'tuple', components: [
-        { name: 'assetId', type: 'bytes32' },
-        { name: 'destination', type: 'bytes' },
-        { name: 'recipient', type: 'bytes' },
+      { name: 'teleportParams', type: 'tuple', components: [
         { name: 'amount', type: 'uint256' },
-        { name: 'timeout', type: 'uint64' },
-        { name: 'tokenGateway', type: 'bytes' },
         { name: 'relayerFee', type: 'uint256' },
+        { name: 'assetId', type: 'bytes32' },
         { name: 'redeem', type: 'bool' },
+        { name: 'to', type: 'bytes32' },
+        { name: 'dest', type: 'bytes' },
+        { name: 'timeout', type: 'uint64' },
+        { name: 'nativeCost', type: 'uint256' },
+        { name: 'data', type: 'bytes' },
       ]}
     ],
     outputs: [{ name: 'commitment', type: 'bytes32' }],
     stateMutability: 'payable',
   },
   {
-    name: 'quote',
+    name: 'erc20',
     type: 'function',
-    inputs: [
-      { name: 'destination', type: 'bytes' },
-      { name: 'timeout', type: 'uint64' },
-    ],
-    outputs: [{ name: 'fee', type: 'uint256' }],
+    inputs: [{ name: 'assetId', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
   },
 ] as const
+
+const WETH9_ABI = [
+  {
+    name: 'deposit',
+    type: 'function',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+] as const
+
+const ERC20_APPROVE_ABI = [
+  {
+    name: 'approve',
+    type: 'function',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+] as const
+
+// USD.h fee token on Sepolia (ERC6160 HyperFungibleToken)
+const USDH_ADDRESS = '0xa801da100bf16d07f668f4a49e1f71fc54d05177' as const
 
 export class TokenGatewayService {
   private indexerUrl: string
@@ -115,87 +139,162 @@ export class TokenGatewayService {
 
     await ensureMetaMaskChain(sourceChain)
 
-    const { createPublicClient, createWalletClient, custom, http } = await import('viem')
+    const { createPublicClient, createWalletClient, custom, http, keccak256, toHex } = await import('viem')
 
-    // Check if window.ethereum is available
     if (typeof window === 'undefined' || !window.ethereum) {
       throw new Error('No wallet detected. Please install MetaMask or another Web3 wallet.')
     }
 
-    const publicClient = createPublicClient({
-      transport: http(sourceChain.rpcUrl),
-    })
+    const chain = {
+      id: sourceChain.chainId!,
+      name: sourceChain.name,
+      nativeCurrency: {
+        name: sourceChain.tokenSymbol,
+        symbol: sourceChain.tokenSymbol,
+        decimals: sourceChain.tokenDecimals,
+      },
+      rpcUrls: { default: { http: [sourceChain.rpcUrl] } },
+    }
 
-    const walletClient = createWalletClient({
-      transport: custom(window.ethereum),
-    })
+    const publicClient = createPublicClient({ transport: http(sourceChain.rpcUrl) })
+    const walletClient = createWalletClient({ transport: custom(window.ethereum) })
 
-    // Request account access
     const [account] = await walletClient.requestAddresses()
-    if (!account) {
-      throw new Error('No account connected')
+    if (!account) throw new Error('No account connected')
+
+    const gatewayAddress = sourceChain.gatewayAddress as `0x${string}`
+    const assetId = keccak256(toHex('WETH'))
+
+    // Look up the WETH address registered on the gateway
+    const wethAddress = await publicClient.readContract({
+      address: gatewayAddress,
+      abi: TOKEN_GATEWAY_ABI,
+      functionName: 'erc20',
+      args: [assetId],
+    })
+
+    if (wethAddress === '0x0000000000000000000000000000000000000000') {
+      throw new Error('WETH not registered on the TokenGateway')
     }
 
-    // Encode destination state machine ID
+    console.log('[teleport] WETH address:', wethAddress)
+    console.log('[teleport] wrapping', amount.toString(), 'wei to WETH')
+
+    // Step 1: Wrap ETH → WETH
+    onProgress?.({ status: 'signing' })
+    const wrapHash = await walletClient.writeContract({
+      account,
+      address: wethAddress,
+      abi: WETH9_ABI,
+      functionName: 'deposit',
+      args: [],
+      value: amount,
+      chain,
+    })
+
+    console.log('[teleport] wrap tx:', wrapHash)
+    const wrapReceipt = await publicClient.waitForTransactionReceipt({
+      hash: wrapHash,
+      timeout: 120_000,
+    })
+    if (wrapReceipt.status === 'reverted') {
+      throw new Error(`WETH wrap reverted (${wrapHash})`)
+    }
+
+    // Step 2: Approve gateway to spend WETH
+    console.log('[teleport] approving gateway to spend WETH')
+    const approveWethHash = await walletClient.writeContract({
+      account,
+      address: wethAddress,
+      abi: ERC20_APPROVE_ABI,
+      functionName: 'approve',
+      args: [gatewayAddress, amount],
+      chain,
+    })
+
+    console.log('[teleport] WETH approve tx:', approveWethHash)
+    const approveWethReceipt = await publicClient.waitForTransactionReceipt({
+      hash: approveWethHash,
+      timeout: 120_000,
+    })
+    if (approveWethReceipt.status === 'reverted') {
+      throw new Error(`WETH approve reverted (${approveWethHash})`)
+    }
+
+    // Step 3: Approve gateway to spend USD.h (dispatch fee token)
+    const usdhApproveAmount = BigInt(10e18) // 10 USD.h — covers many teleports
+    console.log('[teleport] approving gateway to spend USD.h for fees')
+    const approveUsdhHash = await walletClient.writeContract({
+      account,
+      address: USDH_ADDRESS,
+      abi: ERC20_APPROVE_ABI,
+      functionName: 'approve',
+      args: [gatewayAddress, usdhApproveAmount],
+      chain,
+    })
+
+    console.log('[teleport] USD.h approve tx:', approveUsdhHash)
+    const approveUsdhReceipt = await publicClient.waitForTransactionReceipt({
+      hash: approveUsdhHash,
+      timeout: 120_000,
+    })
+    if (approveUsdhReceipt.status === 'reverted') {
+      throw new Error(`USD.h approve reverted (${approveUsdhHash})`)
+    }
+
+    // Step 4: Teleport
     const destStateMachineId = this.encodeStateMachineId(destChain)
-
-    // Encode recipient address for destination chain
-    const encodedRecipient = this.encodeRecipient(recipient, destChain)
-
-    // Get destination gateway address
-    const destGatewayAddress = destChain.gatewayAddress || '0x'
-
-    // Prepare teleport parameters
     const teleportParams = {
-      assetId: '0x' + '0'.repeat(64) as `0x${string}`, // Native token
-      destination: destStateMachineId,
-      recipient: encodedRecipient,
       amount,
-      timeout: BigInt(timeout),
-      tokenGateway: destGatewayAddress as `0x${string}`,
-      relayerFee: BigInt(0), // Auto-relay
+      relayerFee: BigInt(0),
+      assetId,
       redeem: false,
+      to: this.encodeRecipientToBytes32(recipient),
+      dest: destStateMachineId,
+      timeout: BigInt(timeout),
+      nativeCost: BigInt(0),
+      data: '0x' as `0x${string}`,
     }
 
-    onProgress?.({ status: 'source_submitted' })
+    console.log('[teleport] submitting teleport:', {
+      gateway: gatewayAddress,
+      dest: destStateMachineId,
+      amount: amount.toString(),
+      assetId,
+    })
 
-    // Execute teleport transaction
     const txHash = await walletClient.writeContract({
       account,
-      address: sourceChain.gatewayAddress as `0x${string}`,
+      address: gatewayAddress,
       abi: TOKEN_GATEWAY_ABI,
       functionName: 'teleport',
       args: [teleportParams],
-      value: amount, // For native token transfers
-      chain: {
-        id: sourceChain.chainId!,
-        name: sourceChain.name,
-        nativeCurrency: {
-          name: sourceChain.tokenSymbol,
-          symbol: sourceChain.tokenSymbol,
-          decimals: sourceChain.tokenDecimals,
-        },
-        rpcUrls: {
-          default: { http: [sourceChain.rpcUrl] },
-        },
-      },
+      value: BigInt(0),
+      gas: 10_000_000n,
+      chain,
     })
 
+    console.log('[teleport] teleport tx:', txHash)
     onProgress?.({ status: 'source_submitted', txHash })
 
-    // Wait for transaction confirmation
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: 120_000,
+    })
 
+    if (receipt.status === 'reverted') {
+      console.error('[teleport] tx reverted:', txHash)
+      throw new Error(`Teleport reverted on-chain (${txHash})`)
+    }
+
+    console.log('[teleport] confirmed, block:', Number(receipt.blockNumber))
     onProgress?.({
       status: 'source_finalized',
       txHash,
       sourceBlockNumber: Number(receipt.blockNumber),
     })
 
-    // Extract request ID from logs (simplified - actual implementation would parse logs)
-    const requestId = txHash // Use txHash as requestId for now
-
-    return { txHash, requestId }
+    return { txHash, requestId: txHash }
   }
 
   private async teleportFromSubstrate(
@@ -337,56 +436,18 @@ export class TokenGatewayService {
     }
   }
 
-  async estimateFee(params: TeleportParams): Promise<bigint> {
-    const { sourceChain, destChain, timeout = 3600 } = params
-
-    if (sourceChain.type !== 'evm' || !sourceChain.gatewayAddress) {
-      // For non-EVM chains, return a default fee estimate
-      return BigInt(0)
-    }
-
-    try {
-      const { createPublicClient, http } = await import('viem')
-
-      const client = createPublicClient({
-        transport: http(sourceChain.rpcUrl),
-      })
-
-      const destStateMachineId = this.encodeStateMachineId(destChain)
-
-      const fee = await client.readContract({
-        address: sourceChain.gatewayAddress as `0x${string}`,
-        abi: TOKEN_GATEWAY_ABI,
-        functionName: 'quote',
-        args: [destStateMachineId as `0x${string}`, BigInt(timeout)],
-      })
-
-      return fee as bigint
-    } catch {
-      return BigInt(0)
-    }
-  }
-
   private encodeStateMachineId(chain: ChainConfig): `0x${string}` {
-    // Encode chain as state machine ID
-    // Format: chain_type (1 byte) + chain_id (4 bytes)
-    if (chain.type === 'evm') {
-      const chainId = chain.chainId || 1
-      return `0x01${chainId.toString(16).padStart(8, '0')}` as `0x${string}`
-    }
-    // For substrate, use ss58 prefix
-    const prefix = chain.ss58Prefix || 0
-    return `0x02${prefix.toString(16).padStart(8, '0')}` as `0x${string}`
+    // Hyperbridge state machine IDs are UTF-8 strings: "EVM-{chainId}", "POLKADOT-{paraId}"
+    const id = chain.type === 'evm'
+      ? `EVM-${chain.chainId || 1}`
+      : `POLKADOT-${chain.ss58Prefix || 0}`
+    const bytes = Array.from(new TextEncoder().encode(id))
+    return `0x${bytes.map(b => b.toString(16).padStart(2, '0')).join('')}` as `0x${string}`
   }
 
-  private encodeRecipient(address: string, chain: ChainConfig): `0x${string}` {
-    if (chain.type === 'evm') {
-      // EVM addresses are already hex
-      return address.startsWith('0x') ? address as `0x${string}` : `0x${address}` as `0x${string}`
-    }
-    // For substrate, we need to decode SS58 to raw pubkey
-    // This is a simplified version - actual implementation would decode SS58
-    return `0x${address}` as `0x${string}`
+  private encodeRecipientToBytes32(address: string): `0x${string}` {
+    const clean = address.startsWith('0x') ? address.slice(2) : address
+    return `0x${clean.padStart(64, '0')}` as `0x${string}`
   }
 }
 
