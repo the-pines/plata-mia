@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
 import {
   generateSpendingKeyPair,
@@ -7,41 +8,79 @@ import {
   bytesToHex,
   pubkeyToBytes32,
 } from '@plata-mia/stealth-core'
-import { useWallet } from '@/hooks/useWallet'
+import { useWallet, truncateAddress } from '@/hooks/useWallet'
 import { polkadotHubTestnet } from '@/lib/contracts'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
-import { storeKeys, hasStoredKeys } from '@/lib/keyStorage'
+import { storeKeys, hasStoredKeys, loadKeys } from '@/lib/keyStorage'
 import { useRegisterStore } from '@/stores/registerStore'
 import { useRegisterMetaMask, useRegisterPolkadotJs } from '@/queries/useRegistryQueries'
+import { lookup } from '@/services/registry'
 import type { ApiPromise } from '@polkadot/api'
 import type { Signer } from '@polkadot/api/types'
 
 export default function RegisterPage() {
   const { isConnected, account, api, signer, walletType } = useWallet()
+  const autoSaveTriggered = useRef(false)
 
   const {
     step,
     spending,
     viewing,
     hint,
-    nickname,
     loading,
     storing,
     keysSaved,
     savePassword,
+    showRawKeys,
+    loadingEntry,
+    existingEntry,
+    existingEntryHint,
     setHint,
-    setNickname,
     setSavePassword,
     setKeys,
     setStoring,
     setKeysSaved,
     setLoading,
+    setShowRawKeys,
+    setLoadingEntry,
+    setExistingEntry,
     complete,
-    reset,
   } = useRegisterStore()
 
   const registerMetaMask = useRegisterMetaMask()
   const registerPolkadotJs = useRegisterPolkadotJs()
+
+  const hasKeys = account ? hasStoredKeys(account.address) : false
+
+  const handleLoadExisting = async () => {
+    if (!account || !walletType || !signer) return
+
+    setLoadingEntry(true)
+    try {
+      const stored = await loadKeys(walletType, signer, account.address)
+      if (!stored.hint) {
+        setLoadingEntry(false)
+        return
+      }
+
+      const entry = await lookup(stored.hint)
+      if (entry) {
+        setExistingEntry(entry, stored.hint)
+      }
+    } catch {
+      showError('Could not load existing registration')
+    } finally {
+      setLoadingEntry(false)
+    }
+  }
+
+  // Auto-save keys for MetaMask after registration completes
+  useEffect(() => {
+    if (step !== 'done' || walletType !== 'metamask' || keysSaved || autoSaveTriggered.current) return
+    autoSaveTriggered.current = true
+    handleSaveKeys()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, walletType, keysSaved])
 
   const handleGenerate = () => {
     if (account && hasStoredKeys(account.address)) {
@@ -112,7 +151,7 @@ export default function RegisterPage() {
           spendingKey: spendBytes32,
           viewingKey: viewBytes32,
           preferredChain: polkadotHubTestnet.id,
-          nickname: nickname || hint,
+          nickname: hint,
           account: account.address as `0x${string}`,
         })
       } else if (walletType === 'polkadotjs' && api && signer) {
@@ -121,7 +160,7 @@ export default function RegisterPage() {
           spendingKey: spendBytes32,
           viewingKey: viewBytes32,
           preferredChain: polkadotHubTestnet.id,
-          nickname: nickname || hint,
+          nickname: hint,
           api: api as ApiPromise,
           signerAddress: account.address,
           signer: signer as Signer,
@@ -132,6 +171,7 @@ export default function RegisterPage() {
 
       dismissToast(loadingId)
       showSuccess('Hint registered on-chain!')
+      autoSaveTriggered.current = false
       complete()
     } catch (err) {
       dismissToast(loadingId)
@@ -144,12 +184,6 @@ export default function RegisterPage() {
   if (!isConnected) {
     return (
       <div className="max-w-2xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray">Register</h1>
-          <p className="text-gray-light mt-2">
-            Generate your stealth keys to receive private payments
-          </p>
-        </div>
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-lemon rounded-lg flex items-center justify-center">
@@ -171,26 +205,68 @@ export default function RegisterPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray">Register</h1>
-        <p className="text-gray-light mt-2">
-          Generate your stealth keys to receive private payments
-        </p>
-      </div>
-
       {step === 'generate' && (
-        <Card className="space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray">Step 1: Generate Keys</h2>
-            <p className="text-gray-lighter text-sm">
-              Click the button below to generate your spending and viewing keypairs.
-              These keys will allow you to receive and spend private payments.
-            </p>
-          </div>
-          <Button onClick={handleGenerate} size="lg">
-            Generate Keys
-          </Button>
-        </Card>
+        <>
+          {existingEntry && existingEntryHint ? (
+            <Card className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray">Your Registration</h2>
+                  <p className="text-sm text-gray-light">You already have a registered stealth address.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-lighter">Hint:</span>{' '}
+                  <span className="font-mono font-medium text-gray">{existingEntryHint}</span>
+                </div>
+                <div>
+                  <span className="text-gray-lighter">Spending Key:</span>{' '}
+                  <span className="font-mono text-gray">{truncateAddress(existingEntry.spendingKey)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-lighter">Viewing Key:</span>{' '}
+                  <span className="font-mono text-gray">{truncateAddress(existingEntry.viewingKey)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-lighter">Preferred Chain:</span>{' '}
+                  <span className="text-gray">{existingEntry.preferredChain}</span>
+                </div>
+              </div>
+            </Card>
+          ) : hasKeys && !existingEntry && (
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-gray">Existing Registration</h3>
+                  <p className="text-sm text-gray-lighter">
+                    You have saved keys in this browser. View your on-chain registration.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLoadExisting}
+                  loading={loadingEntry}
+                >
+                  View
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          <Card className="space-y-6">
+            <Button onClick={handleGenerate} size="lg">
+              Generate Keys
+            </Button>
+          </Card>
+        </>
       )}
 
       {step === 'register' && spending && viewing && (
@@ -203,89 +279,49 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray">Save your keys!</h3>
+                <h3 className="font-semibold text-gray">Back up your keys!</h3>
                 <p className="text-sm text-gray-light">
-                  Copy and securely store these keys. They will not be shown again.
-                  You need the viewing secret to scan for payments and the spending secret to spend them.
+                  Your keys will be saved to this browser after registration, but for extra safety you can
+                  expand and copy the raw keys below.
                 </p>
               </div>
             </div>
           </Card>
 
           <Card className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray">Step 2: Your Keys</h2>
-
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray">Spending Keypair</h3>
-              <KeyDisplay label="Secret (keep private!)" value={bytesToHex(spending.secret)} />
-              <KeyDisplay label="Public Key (S)" value={bytesToHex(spending.pubkey)} />
-            </div>
-
-            <div className="border-t border-gray-100 pt-6 space-y-4">
-              <h3 className="font-medium text-gray">Viewing Keypair</h3>
-              <KeyDisplay label="Secret (keep private!)" value={bytesToHex(viewing.secret)} />
-              <KeyDisplay label="Public Key (V)" value={bytesToHex(viewing.pubkey)} />
-            </div>
-          </Card>
-
-          <Card className="space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-gray">Save Keys to Browser</h3>
-                <p className="text-sm text-gray-lighter">
-                  Encrypt and store your keys locally so you don&apos;t have to paste them every time.
-                </p>
-              </div>
-              {keysSaved && (
-                <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Saved
-                </span>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRawKeys(!showRawKeys)}
+              >
+                {showRawKeys ? 'Hide raw keys' : 'Show raw keys'}
+              </Button>
             </div>
-            {!keysSaved && (
+
+            {showRawKeys && (
               <>
-                {walletType === 'polkadotjs' && (
-                  <Input
-                    label="Encryption Password"
-                    type="password"
-                    placeholder="Choose a password to encrypt your keys"
-                    value={savePassword}
-                    onChange={(e) => setSavePassword(e.target.value)}
-                  />
-                )}
-                <Button
-                  variant="outline"
-                  onClick={handleSaveKeys}
-                  loading={storing}
-                  className="w-full"
-                >
-                  {walletType === 'metamask' ? 'Sign & Save to Browser' : 'Encrypt & Save to Browser'}
-                </Button>
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray">Spending Keypair</h3>
+                  <KeyDisplay label="Secret (keep private!)" value={bytesToHex(spending.secret)} />
+                  <KeyDisplay label="Public Key (S)" value={bytesToHex(spending.pubkey)} />
+                </div>
+
+                <div className="border-t border-gray-100 pt-6 space-y-4">
+                  <h3 className="font-medium text-gray">Viewing Keypair</h3>
+                  <KeyDisplay label="Secret (keep private!)" value={bytesToHex(viewing.secret)} />
+                  <KeyDisplay label="Public Key (V)" value={bytesToHex(viewing.pubkey)} />
+                </div>
               </>
             )}
           </Card>
 
           <Card className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray">Step 3: Register</h2>
-            <p className="text-gray-lighter text-sm">
-              Choose a memorable hint that others can use to find you (like a username).
-            </p>
-
             <Input
               label="Hint"
               placeholder="e.g., alice, bob.payments, myname"
               value={hint}
               onChange={(e) => setHint(e.target.value)}
-            />
-
-            <Input
-              label="Nickname (optional)"
-              placeholder="Display name for your stealth address"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
             />
 
             <Button onClick={handleRegister} loading={loading} size="lg" className="w-full">
@@ -297,55 +333,41 @@ export default function RegisterPage() {
 
       {step === 'done' && (
         <Card variant="highlight" className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray">Registration Complete!</h2>
-              <p className="text-gray-light">
-                Your stealth address is now registered with hint: <span className="font-mono font-medium">{hint}</span>
-              </p>
-            </div>
-          </div>
-
           <div className="space-y-2 text-sm text-gray-light">
-            <p>Others can now send you private payments using your hint.</p>
-            <p className="font-medium text-gray">
-              Remember: Keep your secret keys safe. You&apos;ll need them to receive and spend payments.
-            </p>
+            {keysSaved && (
+              <p className="text-green-600 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Keys saved to browser
+              </p>
+            )}
+            {storing && (
+              <p className="text-gray-lighter">Saving keys to browser...</p>
+            )}
           </div>
 
-          {!keysSaved && spending && viewing && (
+          {!keysSaved && !storing && walletType === 'polkadotjs' && spending && viewing && (
             <div className="border-t border-gray-200 pt-4 space-y-3">
               <p className="text-sm text-gray-light">
-                You haven&apos;t saved your keys to this browser yet. Save them now so you can unlock them on the receive page.
+                Enter a password to encrypt and save your keys to this browser.
               </p>
-              {walletType === 'polkadotjs' && (
-                <Input
-                  label="Encryption Password"
-                  type="password"
-                  placeholder="Choose a password to encrypt your keys"
-                  value={savePassword}
-                  onChange={(e) => setSavePassword(e.target.value)}
-                />
-              )}
+              <Input
+                label="Encryption Password"
+                type="password"
+                placeholder="Choose a password to encrypt your keys"
+                value={savePassword}
+                onChange={(e) => setSavePassword(e.target.value)}
+              />
               <Button variant="outline" onClick={handleSaveKeys} loading={storing} className="w-full">
-                {walletType === 'metamask' ? 'Sign & Save to Browser' : 'Encrypt & Save to Browser'}
+                Encrypt & Save to Browser
               </Button>
             </div>
           )}
 
-          <div className="flex gap-4">
-            <Button variant="outline" onClick={() => window.location.href = '/receive'}>
-              Go to Receive
-            </Button>
-            <Button variant="secondary" onClick={reset}>
-              Register Another
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => window.location.href = '/receive'}>
+            Go to Receive
+          </Button>
         </Card>
       )}
     </div>

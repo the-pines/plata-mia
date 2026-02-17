@@ -20,6 +20,15 @@ export const HYPERBRIDGE_INDEXER_URL =
 
 export const HYPERBRIDGE_EXPLORER_URL = 'https://explorer.hyperbridge.network'
 
+export function getHyperbridgeExplorerLink(
+  commitmentHash: string | undefined,
+  isTestnet: boolean
+): string | null {
+  if (!commitmentHash) return null
+  const base = `${HYPERBRIDGE_EXPLORER_URL}/messages/${commitmentHash}`
+  return isTestnet ? `${base}?network=gargantua` : base
+}
+
 // Default chains for cross-chain transfers
 export const DEFAULT_SOURCE_CHAIN =
   process.env.NEXT_PUBLIC_DEFAULT_SOURCE_CHAIN || 'polkadot-hub-testnet'

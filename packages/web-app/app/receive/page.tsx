@@ -135,13 +135,6 @@ export default function ReceivePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray">Receive</h1>
-        <p className="text-gray-light mt-2">
-          Scan for incoming payments and get your private keys
-        </p>
-      </div>
-
       {isConnected && hasKeys && !keysLoaded && (
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
@@ -173,15 +166,6 @@ export default function ReceivePage() {
       )}
 
       <Card className="space-y-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray">Enter Your Keys</h2>
-          <p className="text-gray-lighter text-sm">
-            {keysLoaded
-              ? 'Keys loaded from browser storage. You can edit them if needed.'
-              : 'Paste your keys from when you registered to scan for payments.'}
-          </p>
-        </div>
-
         <div className="space-y-4">
           <Input
             label="Viewing Secret (v)"
@@ -216,7 +200,6 @@ export default function ReceivePage() {
       {scannedCount > 0 && (
         <Card className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray">Scan Results</h2>
             <span className="text-sm text-gray-lighter">
               Scanned {scannedCount} announcement{scannedCount !== 1 ? 's' : ''}
             </span>
@@ -263,16 +246,6 @@ export default function ReceivePage() {
           )}
         </Card>
       )}
-
-      <Card variant="highlight" className="space-y-3">
-        <h3 className="font-semibold text-gray">How scanning works</h3>
-        <ol className="text-sm text-gray-light space-y-2">
-          <li><span className="font-mono bg-lemon px-1.5 py-0.5 rounded mr-2">1</span>We fetch all announcements from the network</li>
-          <li><span className="font-mono bg-lemon px-1.5 py-0.5 rounded mr-2">2</span>For each announcement, we compute a shared secret using your viewing key</li>
-          <li><span className="font-mono bg-lemon px-1.5 py-0.5 rounded mr-2">3</span>We use the view tag for quick filtering (99.6% rejection rate)</li>
-          <li><span className="font-mono bg-lemon px-1.5 py-0.5 rounded mr-2">4</span>For matches, we derive the stealth address and spending key</li>
-        </ol>
-      </Card>
     </div>
   )
 }

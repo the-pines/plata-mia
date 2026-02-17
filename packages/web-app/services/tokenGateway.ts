@@ -1,4 +1,5 @@
 import { type ChainConfig, ensureMetaMaskChain } from '@/lib/chains'
+import { createQueryClient, queryPostRequest, type PostRequestWithStatus, type IndexerQueryClient } from '@hyperbridge/sdk'
 
 export type TransferStatus =
   | 'pending'
@@ -18,6 +19,7 @@ export interface TransferProgress {
   error?: string
   sourceBlockNumber?: number
   destBlockNumber?: number
+  destTxHash?: string
 }
 
 export interface TeleportParams {
@@ -32,6 +34,7 @@ export interface TeleportParams {
 export interface TeleportResult {
   txHash: string
   requestId: string
+  commitmentHash?: string
 }
 
 // Token Gateway ABI – verified against 0xFcDa26cA021d5535C3059547390E6cCd8De7acA6 (Sepolia)
@@ -91,10 +94,10 @@ const ERC20_APPROVE_ABI = [
 const USDH_ADDRESS = '0xa801da100bf16d07f668f4a49e1f71fc54d05177' as const
 
 export class TokenGatewayService {
-  private indexerUrl: string
+  private queryClient: IndexerQueryClient
 
   constructor(indexerUrl: string) {
-    this.indexerUrl = indexerUrl
+    this.queryClient = createQueryClient({ url: indexerUrl })
   }
 
   async teleport(
@@ -294,7 +297,21 @@ export class TokenGatewayService {
       sourceBlockNumber: Number(receipt.blockNumber),
     })
 
-    return { txHash, requestId: txHash }
+    // Extract commitment hash from the PostRequestEvent in the receipt
+    let commitmentHash: string | undefined
+    try {
+      const { getPostRequestEventFromTx, postRequestCommitment } = await import('@hyperbridge/sdk')
+      const event = await getPostRequestEventFromTx(publicClient, txHash)
+      if (event?.args) {
+        const { commitment } = postRequestCommitment(event.args)
+        commitmentHash = commitment
+        console.log('[teleport] commitment hash:', commitmentHash)
+      }
+    } catch (err) {
+      console.warn('[teleport] failed to extract commitment:', err)
+    }
+
+    return { txHash, requestId: commitmentHash || txHash, commitmentHash }
   }
 
   private async teleportFromSubstrate(
@@ -375,64 +392,54 @@ export class TokenGatewayService {
     return { txHash, requestId: txHash }
   }
 
-  async getTransferStatus(requestId: string): Promise<TransferProgress> {
+  async queryStatus(commitmentHash: string): Promise<TransferProgress> {
     try {
-      const response = await fetch(this.indexerUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: `
-            query GetRequestStatus($id: String!) {
-              request(id: $id) {
-                id
-                status
-                source
-                dest
-                statusMetadata(first: 10, orderBy: [TIMESTAMP_DESC]) {
-                  nodes {
-                    status
-                    blockNumber
-                    transactionHash
-                  }
-                }
-              }
-            }
-          `,
-          variables: { id: requestId },
-        }),
+      const result = await queryPostRequest({
+        commitmentHash,
+        queryClient: this.queryClient,
       })
 
-      const data = await response.json()
-      const request = data?.data?.request
-
-      if (!request) {
-        return { status: 'pending', requestId }
+      if (!result) {
+        return { status: 'pending', requestId: commitmentHash }
       }
 
-      const statusMap: Record<string, TransferStatus> = {
-        SOURCE: 'source_finalized',
-        HYPERBRIDGE_DELIVERED: 'hyperbridge_relaying',
-        DESTINATION: 'dest_finalized',
-        HYPERBRIDGE_TIMED_OUT: 'timeout',
-        TIMED_OUT: 'timeout',
-      }
-
-      const metadata = request.statusMetadata?.nodes || []
-      const sourceEvent = metadata.find((m: { status: string }) => m.status === 'SOURCE')
-      const destEvent = metadata.find((m: { status: string }) => m.status === 'DESTINATION')
-
-      return {
-        status: statusMap[request.status] || 'pending',
-        requestId,
-        sourceBlockNumber: sourceEvent?.blockNumber ? Number(sourceEvent.blockNumber) : undefined,
-        destBlockNumber: destEvent?.blockNumber ? Number(destEvent.blockNumber) : undefined,
-      }
+      return this.mapPostRequestToProgress(result, commitmentHash)
     } catch (error) {
       return {
         status: 'pending',
-        requestId,
+        requestId: commitmentHash,
         error: error instanceof Error ? error.message : 'Failed to fetch status',
       }
+    }
+  }
+
+  private mapPostRequestToProgress(
+    result: PostRequestWithStatus,
+    commitmentHash: string
+  ): TransferProgress {
+    const statusMap: Record<string, TransferStatus> = {
+      SOURCE: 'source_finalized',
+      SOURCE_FINALIZED: 'source_finalized',
+      HYPERBRIDGE_DELIVERED: 'hyperbridge_relaying',
+      HYPERBRIDGE_FINALIZED: 'hyperbridge_relaying',
+      DESTINATION: 'dest_finalized',
+      TIMED_OUT: 'timeout',
+      HYPERBRIDGE_TIMED_OUT: 'timeout',
+    }
+
+    const statuses = result.statuses ?? []
+    const lastStatus = statuses[statuses.length - 1]
+    const mapped = lastStatus ? statusMap[lastStatus.status] ?? 'pending' : 'pending'
+
+    const sourceEvent = statuses.find((s) => s.status === 'SOURCE')
+    const destEvent = statuses.find((s) => s.status === 'DESTINATION')
+
+    return {
+      status: mapped,
+      requestId: commitmentHash,
+      sourceBlockNumber: sourceEvent?.metadata?.blockNumber,
+      destBlockNumber: destEvent?.metadata?.blockNumber,
+      destTxHash: destEvent?.metadata?.transactionHash,
     }
   }
 
