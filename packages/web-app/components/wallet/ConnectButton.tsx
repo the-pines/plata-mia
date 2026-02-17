@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useWallet, truncateAddress } from '@/hooks/useWallet'
-import { WalletType } from '@/contexts/WalletContext'
+import { type WalletType } from '@/stores/walletStore'
 import { Button } from '@/components/ui'
 import { WalletModal } from './WalletModal'
 

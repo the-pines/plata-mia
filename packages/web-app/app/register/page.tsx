@@ -1,35 +1,47 @@
 'use client'
 
-import { useState } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { registerWithMetaMask, registerWithPolkadotJs } from '@/services/registry'
 import {
   generateSpendingKeyPair,
   generateViewingKeyPair,
   bytesToHex,
   pubkeyToBytes32,
-  type KeyPair,
 } from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
 import { polkadotHubTestnet } from '@/lib/contracts'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 import { storeKeys, hasStoredKeys } from '@/lib/keyStorage'
+import { useRegisterStore } from '@/stores/registerStore'
+import { useRegisterMetaMask, useRegisterPolkadotJs } from '@/queries/useRegistryQueries'
 import type { ApiPromise } from '@polkadot/api'
 import type { Signer } from '@polkadot/api/types'
 
-type Step = 'generate' | 'register' | 'done'
-
 export default function RegisterPage() {
   const { isConnected, account, api, signer, walletType } = useWallet()
-  const [step, setStep] = useState<Step>('generate')
-  const [spending, setSpending] = useState<KeyPair | null>(null)
-  const [viewing, setViewing] = useState<KeyPair | null>(null)
-  const [hint, setHint] = useState('')
-  const [nickname, setNickname] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [storing, setStoring] = useState(false)
-  const [keysSaved, setKeysSaved] = useState(false)
-  const [savePassword, setSavePassword] = useState('')
+
+  const {
+    step,
+    spending,
+    viewing,
+    hint,
+    nickname,
+    loading,
+    storing,
+    keysSaved,
+    savePassword,
+    setHint,
+    setNickname,
+    setSavePassword,
+    setKeys,
+    setStoring,
+    setKeysSaved,
+    setLoading,
+    complete,
+    reset,
+  } = useRegisterStore()
+
+  const registerMetaMask = useRegisterMetaMask()
+  const registerPolkadotJs = useRegisterPolkadotJs()
 
   const handleGenerate = () => {
     if (account && hasStoredKeys(account.address)) {
@@ -41,9 +53,7 @@ export default function RegisterPage() {
 
     const spendingKp = generateSpendingKeyPair()
     const viewingKp = generateViewingKeyPair()
-    setSpending(spendingKp)
-    setViewing(viewingKp)
-    setStep('register')
+    setKeys(spendingKp, viewingKp)
     showSuccess('Keys generated successfully')
   }
 
@@ -97,32 +107,32 @@ export default function RegisterPage() {
       const viewBytes32 = pubkeyToBytes32(viewing.pubkey)
 
       if (walletType === 'metamask') {
-        await registerWithMetaMask(
+        await registerMetaMask.mutateAsync({
           hint,
-          spendBytes32,
-          viewBytes32,
-          polkadotHubTestnet.id,
-          nickname || hint,
-          account.address as `0x${string}`
-        )
+          spendingKey: spendBytes32,
+          viewingKey: viewBytes32,
+          preferredChain: polkadotHubTestnet.id,
+          nickname: nickname || hint,
+          account: account.address as `0x${string}`,
+        })
       } else if (walletType === 'polkadotjs' && api && signer) {
-        await registerWithPolkadotJs(
+        await registerPolkadotJs.mutateAsync({
           hint,
-          spendBytes32,
-          viewBytes32,
-          polkadotHubTestnet.id,
-          nickname || hint,
-          api as ApiPromise,
-          account.address,
-          signer as Signer
-        )
+          spendingKey: spendBytes32,
+          viewingKey: viewBytes32,
+          preferredChain: polkadotHubTestnet.id,
+          nickname: nickname || hint,
+          api: api as ApiPromise,
+          signerAddress: account.address,
+          signer: signer as Signer,
+        })
       } else {
         throw new Error('Wallet not properly connected')
       }
 
       dismissToast(loadingId)
       showSuccess('Hint registered on-chain!')
-      setStep('done')
+      complete()
     } catch (err) {
       dismissToast(loadingId)
       showError(err instanceof Error ? err.message : 'Registration failed')
@@ -332,13 +342,7 @@ export default function RegisterPage() {
             <Button variant="outline" onClick={() => window.location.href = '/receive'}>
               Go to Receive
             </Button>
-            <Button variant="secondary" onClick={() => {
-              setStep('generate')
-              setSpending(null)
-              setViewing(null)
-              setHint('')
-              setNickname('')
-            }}>
+            <Button variant="secondary" onClick={reset}>
               Register Another
             </Button>
           </div>

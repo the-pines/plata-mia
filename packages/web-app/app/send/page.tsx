@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import {
   Button,
   Card,
@@ -9,59 +8,56 @@ import {
   ChainSelector,
   TransferStatus,
 } from '@/components/ui'
-import { lookup, StealthMetaAddress, publishAnnouncement } from '@/services'
-import {
-  getTokenGatewayService,
-  TransferProgress,
-} from '@/services/tokenGateway'
+import { publishAnnouncement } from '@/services'
+import { getTokenGatewayService } from '@/services/tokenGateway'
 import {
   deriveStealthAddress,
   bytesToHex,
   hexToBytes,
-  type DerivedAddress,
 } from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
 import {
-  type ChainConfig,
   getChainById,
   isCrossChainTransfer,
   requiresHyperbridge,
   ensureMetaMaskChain,
-  DEFAULT_SOURCE_CHAIN_ID,
-  DEFAULT_DEST_CHAIN_ID,
 } from '@/lib/chains'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
-
-type Step = 'lookup' | 'send' | 'transferring' | 'done'
+import { useSendStore } from '@/stores/sendStore'
+import { useQueryClient } from '@tanstack/react-query'
+import { registryKeys } from '@/queries/useRegistryQueries'
+import { lookup } from '@/services/registry'
 
 export default function SendPage() {
   const { isConnected } = useWallet()
-  const [step, setStep] = useState<Step>('lookup')
-  const [hint, setHint] = useState('')
-  const [recipient, setRecipient] = useState<StealthMetaAddress | null>(null)
-  const [derivedAddress, setDerivedAddress] = useState<DerivedAddress | null>(null)
-  const [amount, setAmount] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [txHash, setTxHash] = useState('')
+  const queryClient = useQueryClient()
 
-  // Chain selection
-  const [sourceChainId, setSourceChainId] = useState(DEFAULT_SOURCE_CHAIN_ID)
-  const [destChainId, setDestChainId] = useState(DEFAULT_DEST_CHAIN_ID)
-  const [sourceChain, setSourceChain] = useState<ChainConfig | null>(null)
-  const [destChain, setDestChain] = useState<ChainConfig | null>(null)
+  const {
+    step,
+    hint,
+    recipient,
+    derivedAddress,
+    amount,
+    sourceChainId,
+    destChainId,
+    txHash,
+    transferProgress,
+    loading,
+    setHint,
+    setAmount,
+    setSourceChainId,
+    setDestChainId,
+    setLookupResult,
+    startTransfer,
+    updateProgress,
+    completeTransfer,
+    failTransfer,
+    setLoading,
+    reset,
+  } = useSendStore()
 
-  // Transfer status
-  const [transferProgress, setTransferProgress] = useState<TransferProgress | null>(null)
-
-  // Update chain configs when IDs change
-  useEffect(() => {
-    setSourceChain(getChainById(sourceChainId) || null)
-  }, [sourceChainId])
-
-  useEffect(() => {
-    setDestChain(getChainById(destChainId) || null)
-  }, [destChainId])
-
+  const sourceChain = getChainById(sourceChainId) || null
+  const destChain = getChainById(destChainId) || null
   const isCrossChain = sourceChain && destChain && isCrossChainTransfer(sourceChain, destChain)
   const usesHyperbridge = sourceChain && destChain && requiresHyperbridge(sourceChain, destChain)
 
@@ -80,7 +76,11 @@ export default function SendPage() {
     const loadingId = showLoading('Looking up recipient...')
 
     try {
-      const result = await lookup(hint)
+      const result = await queryClient.fetchQuery({
+        queryKey: registryKeys.lookup(hint),
+        queryFn: () => lookup(hint),
+        staleTime: 60_000,
+      })
       dismissToast(loadingId)
 
       if (!result) {
@@ -88,15 +88,12 @@ export default function SendPage() {
         return
       }
 
-      setRecipient(result)
-
       const derived = deriveStealthAddress(
         hexToBytes(result.spendingKey),
         hexToBytes(result.viewingKey)
       )
-      setDerivedAddress(derived)
+      setLookupResult(result, derived)
       showSuccess('Recipient found')
-      setStep('send')
     } catch (err) {
       dismissToast(loadingId)
       showError(err instanceof Error ? err.message : 'Lookup failed')
@@ -117,16 +114,13 @@ export default function SendPage() {
       return
     }
 
-    setLoading(true)
-    setStep('transferring')
-    setTransferProgress({ status: 'pending' })
+    startTransfer()
 
     try {
       await ensureMetaMaskChain(sourceChain)
       const amountBigInt = BigInt(Math.floor(amountNum * 10 ** sourceChain.tokenDecimals))
 
       if (isCrossChain && usesHyperbridge) {
-        // Cross-chain transfer via Hyperbridge
         const gateway = getTokenGatewayService()
 
         const result = await gateway.teleport(
@@ -137,24 +131,22 @@ export default function SendPage() {
             amount: amountBigInt,
           },
           (progress) => {
-            setTransferProgress(progress)
+            updateProgress(progress)
           }
         )
 
-        setTxHash(result.txHash)
-
-        // Publish announcement after successful transfer
-        const blockNumber = transferProgress?.sourceBlockNumber || Math.floor(Date.now() / 1000)
+        const blockNumber = result.txHash
+          ? Math.floor(Date.now() / 1000)
+          : Math.floor(Date.now() / 1000)
         await publishAnnouncement(
           bytesToHex(derivedAddress.ephemeralPubkey.slice(1)),
           derivedAddress.viewTag,
           blockNumber
         )
 
-        setTransferProgress({ status: 'completed', txHash: result.txHash })
+        completeTransfer(result.txHash)
       } else {
-        // Same-chain transfer
-        setTransferProgress({ status: 'signing' })
+        updateProgress({ status: 'signing' })
 
         const { createPublicClient, createWalletClient, custom, http } = await import('viem')
 
@@ -173,7 +165,7 @@ export default function SendPage() {
         const [account] = await walletClient.requestAddresses()
         if (!account) throw new Error('No account connected')
 
-        const txHash = await walletClient.sendTransaction({
+        const hash = await walletClient.sendTransaction({
           account,
           to: derivedAddress.address,
           value: amountBigInt,
@@ -189,14 +181,14 @@ export default function SendPage() {
           },
         })
 
-        setTransferProgress({ status: 'source_submitted', txHash })
+        updateProgress({ status: 'source_submitted', txHash: hash })
 
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+        const receipt = await publicClient.waitForTransactionReceipt({ hash })
         const blockNumber = Number(receipt.blockNumber)
 
-        setTransferProgress({
+        updateProgress({
           status: 'source_finalized',
-          txHash,
+          txHash: hash,
           sourceBlockNumber: blockNumber,
         })
 
@@ -206,28 +198,13 @@ export default function SendPage() {
           blockNumber
         )
 
-        setTxHash(txHash)
-        setTransferProgress({ status: 'completed', txHash })
+        completeTransfer(hash)
       }
-
-      setStep('done')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Transfer failed'
       showError(errorMessage)
-      setTransferProgress({ status: 'failed', error: errorMessage })
-    } finally {
-      setLoading(false)
+      failTransfer(errorMessage)
     }
-  }
-
-  const reset = () => {
-    setStep('lookup')
-    setHint('')
-    setRecipient(null)
-    setDerivedAddress(null)
-    setAmount('')
-    setTxHash('')
-    setTransferProgress(null)
   }
 
   if (!isConnected) {

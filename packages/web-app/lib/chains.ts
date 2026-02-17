@@ -108,9 +108,6 @@ export function requiresHyperbridge(
   return true
 }
 
-export const DEFAULT_SOURCE_CHAIN_ID = 'polkadot-hub-testnet'
-export const DEFAULT_DEST_CHAIN_ID = 'polkadot-hub-testnet'
-
 export async function ensureMetaMaskChain(chain: ChainConfig): Promise<void> {
   if (typeof window === 'undefined' || !window.ethereum) return
   if (!chain.chainId) throw new Error(`No chainId configured for ${chain.name}`)

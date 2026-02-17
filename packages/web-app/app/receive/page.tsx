@@ -1,38 +1,45 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Button, Card, Input, KeyDisplay } from '@/components/ui'
-import { getAnnouncements, Announcement } from '@/services'
+import { getAnnouncements } from '@/services'
 import {
   scanAnnouncement,
   deriveSpendingKey,
   bytes32ToPubkey,
   bytesToHex,
   hexToBytes,
-  type ScanResult,
 } from '@plata-mia/stealth-core'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 import { useWallet } from '@/hooks/useWallet'
 import { loadKeys, hasStoredKeys } from '@/lib/keyStorage'
-
-interface FoundPayment {
-  announcement: Announcement
-  scanResult: ScanResult
-  derivedKey: string
-}
+import { useReceiveStore, type FoundPayment } from '@/stores/receiveStore'
 
 export default function ReceivePage() {
   const { isConnected, account, signer, walletType } = useWallet()
-  const [viewingSecret, setViewingSecret] = useState('')
-  const [spendingSecret, setSpendingSecret] = useState('')
-  const [spendingPubkey, setSpendingPubkey] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [scannedCount, setScannedCount] = useState(0)
-  const [payments, setPayments] = useState<FoundPayment[]>([])
-  const [hasKeys, setHasKeys] = useState(false)
-  const [keysLoaded, setKeysLoaded] = useState(false)
-  const [unlocking, setUnlocking] = useState(false)
-  const [unlockPassword, setUnlockPassword] = useState('')
+
+  const {
+    viewingSecret,
+    spendingSecret,
+    spendingPubkey,
+    hasKeys,
+    keysLoaded,
+    unlocking,
+    unlockPassword,
+    loading,
+    scannedCount,
+    payments,
+    setViewingSecret,
+    setSpendingSecret,
+    setSpendingPubkey,
+    setUnlockPassword,
+    setHasKeys,
+    loadKeysFromStorage,
+    setUnlocking,
+    startScan,
+    completeScan,
+    failScan,
+  } = useReceiveStore()
 
   useEffect(() => {
     if (isConnected && account) {
@@ -40,7 +47,7 @@ export default function ReceivePage() {
     } else {
       setHasKeys(false)
     }
-  }, [isConnected, account])
+  }, [isConnected, account, setHasKeys])
 
   const handleUnlock = async () => {
     if (!account || !walletType || !signer) return
@@ -57,10 +64,11 @@ export default function ReceivePage() {
         account.address,
         walletType === 'polkadotjs' ? unlockPassword : undefined
       )
-      setViewingSecret(keys.viewingSecret)
-      setSpendingSecret(keys.spendingSecret)
-      setSpendingPubkey(keys.spendingPubkey)
-      setKeysLoaded(true)
+      loadKeysFromStorage({
+        viewingSecret: keys.viewingSecret,
+        spendingSecret: keys.spendingSecret,
+        spendingPubkey: keys.spendingPubkey,
+      })
       showSuccess('Keys loaded')
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Failed to unlock keys')
@@ -75,9 +83,7 @@ export default function ReceivePage() {
       return
     }
 
-    setLoading(true)
-    setPayments([])
-    setScannedCount(0)
+    startScan()
     const loadingId = showLoading('Scanning for payments...')
 
     try {
@@ -86,7 +92,6 @@ export default function ReceivePage() {
       const S = hexToBytes(spendingPubkey)
 
       const announcements = await getAnnouncements(0)
-      setScannedCount(announcements.length)
 
       const found: FoundPayment[] = []
 
@@ -108,7 +113,7 @@ export default function ReceivePage() {
         }
       }
 
-      setPayments(found)
+      completeScan(announcements.length, found)
       dismissToast(loadingId)
 
       if (found.length > 0) {
@@ -117,6 +122,7 @@ export default function ReceivePage() {
         showSuccess('Scan complete - no new payments')
       }
     } catch (err) {
+      failScan()
       dismissToast(loadingId)
       const msg = err instanceof Error ? err.message : String(err)
       if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
@@ -124,8 +130,6 @@ export default function ReceivePage() {
       } else {
         showError(`Scan failed: ${msg}`)
       }
-    } finally {
-      setLoading(false)
     }
   }
 
