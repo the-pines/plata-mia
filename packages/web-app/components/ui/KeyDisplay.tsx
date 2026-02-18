@@ -20,17 +20,17 @@ export function KeyDisplay({ label, value, copyable = true }: KeyDisplayProps) {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-sm font-medium text-gray">{label}</label>
+        <label className="text-sm font-medium text-secondary">{label}</label>
         {copyable && (
           <button
             onClick={handleCopy}
-            className="text-xs text-gray-lighter hover:text-gray transition-colors"
+            className="text-xs text-tertiary hover:text-white transition-colors"
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>
         )}
       </div>
-      <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm text-gray break-all">
+      <div className="w-full px-4 py-3 bg-module border border-border rounded-lg font-mono text-sm text-white break-all">
         {value}
       </div>
     </div>
