@@ -247,17 +247,17 @@ export default function SendPage() {
 
   if (!isConnected) {
     return (
-      <div className="max-w-2xl mx-auto space-y-8">
+      <div className="w-full max-w-[480px] space-y-8">
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-lemon rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-[#131313]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
             <div>
-              <h2 className="font-semibold text-gray">Connect Your Wallet</h2>
-              <p className="text-sm text-gray-light">
+              <h2 className="font-semibold text-white">Connect Your Wallet</h2>
+              <p className="text-sm text-secondary">
                 Please connect your wallet to send private payments.
               </p>
             </div>
@@ -268,7 +268,7 @@ export default function SendPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="w-full max-w-[480px] space-y-8">
       <TabBar
         tabs={[
           { key: 'send', label: 'Send' },
@@ -298,8 +298,8 @@ export default function SendPage() {
               </div>
 
               {isCrossChain && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-700">
+                <div className="p-3 bg-accent-blue-muted border border-accent-blue/20 rounded-lg">
+                  <p className="text-sm text-accent-blue">
                     Cross-chain transfer via Hyperbridge
                   </p>
                 </div>
@@ -321,29 +321,29 @@ export default function SendPage() {
           {step === 'send' && recipient && derivedAddress && sourceChain && destChain && (
             <div className="space-y-6">
               <Card className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+                <div className="p-4 bg-module rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-lighter">Hint</span>
-                    <span className="font-mono text-gray">{hint}</span>
+                    <span className="text-sm text-secondary">Hint</span>
+                    <span className="font-mono text-white">{hint}</span>
                   </div>
                   {recipient.nickname && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-lighter">Nickname</span>
-                      <span className="text-gray">{recipient.nickname}</span>
+                      <span className="text-sm text-secondary">Nickname</span>
+                      <span className="text-white">{recipient.nickname}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-lighter">Source</span>
-                    <span className="text-gray">{sourceChain.name}</span>
+                    <span className="text-sm text-secondary">Source</span>
+                    <span className="text-white">{sourceChain.name}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-lighter">Destination</span>
-                    <span className="text-gray">{destChain.name}</span>
+                    <span className="text-sm text-secondary">Destination</span>
+                    <span className="text-white">{destChain.name}</span>
                   </div>
                   {isCrossChain && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-lighter">Transfer Type</span>
-                      <span className="text-blue-600 font-medium">Cross-chain (Hyperbridge)</span>
+                      <span className="text-sm text-secondary">Transfer Type</span>
+                      <span className="text-accent-blue font-medium">Cross-chain (Hyperbridge)</span>
                     </div>
                   )}
                 </div>
@@ -364,8 +364,8 @@ export default function SendPage() {
                 />
 
                 {!isCrossChain && sourceChain.type === 'evm' && (
-                  <div className="p-4 bg-lemon-light rounded-lg border border-lemon">
-                    <p className="text-sm text-gray">
+                  <div className="p-4 bg-lemon-muted rounded-lg border border-lemon/20">
+                    <p className="text-sm text-white">
                       <span className="font-medium">Note:</span> This will send a native token
                       transfer to the derived stealth address via your connected wallet.
                     </p>
@@ -373,8 +373,8 @@ export default function SendPage() {
                 )}
 
                 {isCrossChain && (
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-700">
+                  <div className="p-4 bg-accent-blue-muted rounded-lg border border-accent-blue/20">
+                    <p className="text-sm text-accent-blue">
                       <span className="font-medium">Cross-chain transfer:</span> This will use
                       Hyperbridge to securely bridge your tokens. Transfer may take a few
                       minutes.
@@ -415,14 +415,14 @@ export default function SendPage() {
           {step === 'done' && derivedAddress && sourceChain && destChain && (
             <Card variant="highlight" className="space-y-6">
               <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+                <div className="p-4 bg-module rounded-lg space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-lighter">From</span>
-                    <span className="text-gray">{sourceChain.name}</span>
+                    <span className="text-secondary">From</span>
+                    <span className="text-white">{sourceChain.name}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-lighter">To</span>
-                    <span className="text-gray">{destChain.name}</span>
+                    <span className="text-secondary">To</span>
+                    <span className="text-white">{destChain.name}</span>
                   </div>
                 </div>
                 <KeyDisplay label="Stealth Address" value={derivedAddress.address} />
@@ -437,7 +437,7 @@ export default function SendPage() {
                   href={`${sourceChain.explorerUrl}/tx/${txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                  className="inline-flex items-center gap-1 text-sm text-accent-blue hover:underline"
                 >
                   View on {sourceChain.name} Explorer
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

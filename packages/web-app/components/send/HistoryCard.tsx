@@ -10,11 +10,11 @@ interface HistoryCardProps {
 }
 
 const STATUS_CONFIG = {
-  pending:          { dot: 'bg-gray-400' },
+  pending:          { dot: 'bg-tertiary' },
   source_finalized: { dot: 'bg-lemon' },
-  relaying:         { dot: 'bg-blue-500' },
-  completed:        { dot: 'bg-green-500' },
-  failed:           { dot: 'bg-red-500' },
+  relaying:         { dot: 'bg-accent-blue' },
+  completed:        { dot: 'bg-accent-green' },
+  failed:           { dot: 'bg-accent-red' },
   timeout:          { dot: 'bg-orange-500' },
 } as const
 
@@ -63,19 +63,19 @@ function BridgeProgress({ status }: { status: string }) {
         return (
           <div key={step.key} className="flex items-center gap-1">
             {i > 0 && (
-              <div className={`w-6 h-0.5 ${done || active ? 'bg-blue-300' : 'bg-gray-200'}`} />
+              <div className={`w-6 h-0.5 ${done || active ? 'bg-accent-blue' : 'bg-border'}`} />
             )}
             <div className="flex items-center gap-1">
               {done ? (
-                <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-accent-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               ) : active ? (
-                <Spinner className="w-3.5 h-3.5 text-blue-500" />
+                <Spinner className="w-3.5 h-3.5 text-accent-blue" />
               ) : (
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-200" />
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-border" />
               )}
-              <span className={`text-xs ${done ? 'text-green-600' : active ? 'text-blue-600 font-medium' : 'text-gray-lighter'}`}>
+              <span className={`text-xs ${done ? 'text-accent-green' : active ? 'text-accent-blue font-medium' : 'text-tertiary'}`}>
                 {step.label}
               </span>
             </div>
@@ -100,18 +100,18 @@ export function HistoryCard({ entry }: HistoryCardProps) {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
           <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isTerminal ? config.dot : 'bg-lemon'}`} />
-          <span className="font-semibold text-gray">
+          <span className="font-semibold text-white">
             {entry.amount} {entry.tokenSymbol}
           </span>
         </div>
-        <span className="text-xs text-gray-lighter">{formatTimeAgo(entry.timestamp)}</span>
+        <span className="text-xs text-secondary">{formatTimeAgo(entry.timestamp)}</span>
       </div>
 
-      <div className="text-sm text-gray-lighter">
-        To: <span className="text-gray">{entry.hint}</span>
+      <div className="text-sm text-secondary">
+        To: <span className="text-white">{entry.hint}</span>
       </div>
 
-      <div className="text-sm text-gray-lighter">
+      <div className="text-sm text-secondary">
         {sourceChain?.name ?? entry.sourceChainId}
         {' → '}
         {destChain?.name ?? entry.destChainId}
@@ -121,25 +121,25 @@ export function HistoryCard({ entry }: HistoryCardProps) {
         <BridgeProgress status={entry.status} />
       )}
 
-      <div className="flex items-center gap-3 pt-2 border-t border-gray-100 text-sm flex-wrap">
+      <div className="flex items-center gap-3 pt-2 border-t border-border text-sm flex-wrap">
         {sourceChain?.explorerUrl && entry.txHash && (
           <a
             href={`${sourceChain.explorerUrl}/tx/${entry.txHash}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800"
+            className="text-accent-blue hover:underline"
           >
             View on {sourceChain.name}
           </a>
         )}
         {isCrossChain && bridgeExplorerLink && (
           <>
-            <span className="text-gray-200">|</span>
+            <span className="text-tertiary">|</span>
             <a
               href={bridgeExplorerLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800"
+              className="text-accent-blue hover:underline"
             >
               View on Hyperbridge
             </a>
@@ -147,12 +147,12 @@ export function HistoryCard({ entry }: HistoryCardProps) {
         )}
         {isCrossChain && entry.destTxHash && destChain?.explorerUrl && (
           <>
-            <span className="text-gray-200">|</span>
+            <span className="text-tertiary">|</span>
             <a
               href={`${destChain.explorerUrl}/tx/${entry.destTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800"
+              className="text-accent-blue hover:underline"
             >
               View on {destChain.name}
             </a>

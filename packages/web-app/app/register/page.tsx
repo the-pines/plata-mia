@@ -74,7 +74,6 @@ export default function RegisterPage() {
     }
   }
 
-  // Auto-save keys for MetaMask after registration completes
   useEffect(() => {
     if (step !== 'done' || walletType !== 'metamask' || keysSaved || autoSaveTriggered.current) return
     autoSaveTriggered.current = true
@@ -183,17 +182,17 @@ export default function RegisterPage() {
 
   if (!isConnected) {
     return (
-      <div className="max-w-2xl mx-auto space-y-8">
+      <div className="w-full max-w-[480px] space-y-8">
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-lemon rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-[#131313]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
             <div>
-              <h2 className="font-semibold text-gray">Connect Your Wallet</h2>
-              <p className="text-sm text-gray-light">
+              <h2 className="font-semibold text-white">Connect Your Wallet</h2>
+              <p className="text-sm text-secondary">
                 Please connect your wallet to register your stealth address.
               </p>
             </div>
@@ -204,39 +203,39 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="w-full max-w-[480px] space-y-8">
       {step === 'generate' && (
         <>
           {existingEntry && existingEntryHint ? (
             <Card className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-8 h-8 bg-accent-green-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-accent-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="font-semibold text-gray">Your Registration</h2>
-                  <p className="text-sm text-gray-light">You already have a registered stealth address.</p>
+                  <h2 className="font-semibold text-white">Your Registration</h2>
+                  <p className="text-sm text-secondary">You already have a registered stealth address.</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 text-sm">
                 <div>
-                  <span className="text-gray-lighter">Hint:</span>{' '}
-                  <span className="font-mono font-medium text-gray">{existingEntryHint}</span>
+                  <span className="text-secondary">Hint:</span>{' '}
+                  <span className="font-mono font-medium text-white">{existingEntryHint}</span>
                 </div>
                 <div>
-                  <span className="text-gray-lighter">Spending Key:</span>{' '}
-                  <span className="font-mono text-gray">{truncateAddress(existingEntry.spendingKey)}</span>
+                  <span className="text-secondary">Spending Key:</span>{' '}
+                  <span className="font-mono text-white">{truncateAddress(existingEntry.spendingKey)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-lighter">Viewing Key:</span>{' '}
-                  <span className="font-mono text-gray">{truncateAddress(existingEntry.viewingKey)}</span>
+                  <span className="text-secondary">Viewing Key:</span>{' '}
+                  <span className="font-mono text-white">{truncateAddress(existingEntry.viewingKey)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-lighter">Preferred Chain:</span>{' '}
-                  <span className="text-gray">{existingEntry.preferredChain}</span>
+                  <span className="text-secondary">Preferred Chain:</span>{' '}
+                  <span className="text-white">{existingEntry.preferredChain}</span>
                 </div>
               </div>
             </Card>
@@ -244,8 +243,8 @@ export default function RegisterPage() {
             <Card className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray">Existing Registration</h3>
-                  <p className="text-sm text-gray-lighter">
+                  <h3 className="font-medium text-white">Existing Registration</h3>
+                  <p className="text-sm text-secondary">
                     You have saved keys in this browser. View your on-chain registration.
                   </p>
                 </div>
@@ -274,13 +273,13 @@ export default function RegisterPage() {
           <Card variant="highlight" className="space-y-4">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-lemon rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#131313]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray">Back up your keys!</h3>
-                <p className="text-sm text-gray-light">
+                <h3 className="font-semibold text-white">Back up your keys!</h3>
+                <p className="text-sm text-secondary">
                   Your keys will be saved to this browser after registration, but for extra safety you can
                   expand and copy the raw keys below.
                 </p>
@@ -302,13 +301,13 @@ export default function RegisterPage() {
             {showRawKeys && (
               <>
                 <div className="space-y-4">
-                  <h3 className="font-medium text-gray">Spending Keypair</h3>
+                  <h3 className="font-medium text-white">Spending Keypair</h3>
                   <KeyDisplay label="Secret (keep private!)" value={bytesToHex(spending.secret)} />
                   <KeyDisplay label="Public Key (S)" value={bytesToHex(spending.pubkey)} />
                 </div>
 
-                <div className="border-t border-gray-100 pt-6 space-y-4">
-                  <h3 className="font-medium text-gray">Viewing Keypair</h3>
+                <div className="border-t border-border pt-6 space-y-4">
+                  <h3 className="font-medium text-white">Viewing Keypair</h3>
                   <KeyDisplay label="Secret (keep private!)" value={bytesToHex(viewing.secret)} />
                   <KeyDisplay label="Public Key (V)" value={bytesToHex(viewing.pubkey)} />
                 </div>
@@ -333,9 +332,9 @@ export default function RegisterPage() {
 
       {step === 'done' && (
         <Card variant="highlight" className="space-y-6">
-          <div className="space-y-2 text-sm text-gray-light">
+          <div className="space-y-2 text-sm text-secondary">
             {keysSaved && (
-              <p className="text-green-600 flex items-center gap-1">
+              <p className="text-accent-green flex items-center gap-1">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -343,13 +342,13 @@ export default function RegisterPage() {
               </p>
             )}
             {storing && (
-              <p className="text-gray-lighter">Saving keys to browser...</p>
+              <p className="text-tertiary">Saving keys to browser...</p>
             )}
           </div>
 
           {!keysSaved && !storing && walletType === 'polkadotjs' && spending && viewing && (
-            <div className="border-t border-gray-200 pt-4 space-y-3">
-              <p className="text-sm text-gray-light">
+            <div className="border-t border-border pt-4 space-y-3">
+              <p className="text-sm text-secondary">
                 Enter a password to encrypt and save your keys to this browser.
               </p>
               <Input

@@ -110,13 +110,13 @@ export function SendHistory() {
   if (entries.length === 0) {
     return (
       <Card className="flex flex-col items-center justify-center py-12 space-y-3">
-        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
-          <svg className="w-6 h-6 text-gray-lighter" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-12 h-12 bg-module rounded-full flex items-center justify-center">
+          <svg className="w-6 h-6 text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p className="text-gray-lighter text-sm">No transactions yet</p>
-        <p className="text-gray-200 text-xs">Your send history will appear here</p>
+        <p className="text-secondary text-sm">No transactions yet</p>
+        <p className="text-tertiary text-xs">Your send history will appear here</p>
       </Card>
     )
   }
