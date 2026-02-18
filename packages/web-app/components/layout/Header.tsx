@@ -5,23 +5,23 @@ import { ConnectButton } from '@/components/wallet'
 
 export function Header() {
   return (
-    <header className="border-b-2 border-gray-100">
-      <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+    <header className="border-b border-border">
+      <div className="max-w-screen-xl mx-auto px-4 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-lemon rounded-lg flex items-center justify-center">
-            <span className="text-gray font-bold text-lg">P</span>
+            <span className="text-[#131313] font-bold text-lg">P</span>
           </div>
-          <span className="font-bold text-xl text-gray">Plata Mia</span>
+          <span className="font-bold text-xl text-white">Plata Mia</span>
         </Link>
         <div className="flex items-center gap-6">
-          <nav className="flex items-center gap-6">
-            <Link href="/register" className="text-gray-light hover:text-gray transition-colors font-medium">
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="/register" className="text-secondary hover:text-white transition-colors font-medium">
               Register
             </Link>
-            <Link href="/send" className="text-gray-light hover:text-gray transition-colors font-medium">
+            <Link href="/send" className="text-secondary hover:text-white transition-colors font-medium">
               Send
             </Link>
-            <Link href="/receive" className="text-gray-light hover:text-gray transition-colors font-medium">
+            <Link href="/receive" className="text-secondary hover:text-white transition-colors font-medium">
               Receive
             </Link>
           </nav>

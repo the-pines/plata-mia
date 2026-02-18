@@ -63,9 +63,9 @@ export function ConnectButton() {
   if (isConnected && account) {
     return (
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-surface rounded-lg border border-border">
           <WalletIcon type={walletType} />
-          <span className="text-sm font-mono text-gray">
+          <span className="text-sm font-mono text-white">
             {account.name ? `${account.name} (${truncateAddress(account.address)})` : truncateAddress(account.address)}
           </span>
         </div>
@@ -83,7 +83,7 @@ export function ConnectButton() {
           Connect Wallet
         </Button>
         {error && (
-          <span className="text-xs text-red-500 max-w-[200px] text-right">
+          <span className="text-xs text-accent-red max-w-[200px] text-right">
             {error}
           </span>
         )}

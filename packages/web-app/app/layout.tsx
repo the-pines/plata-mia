@@ -16,10 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="min-h-screen flex flex-col">
         <Providers>
           <Header />
-          <main className="max-w-4xl mx-auto px-4 py-8">
+          <main className="flex-1 flex flex-col items-center px-4 pt-8 pb-8">
             {children}
           </main>
           <Toaster />
