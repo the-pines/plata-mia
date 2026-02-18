@@ -6,30 +6,33 @@
 
 :root {
   --lemon: #FDE047;
-  --lemon-light: #FEF9C3;
   --lemon-dark: #EAB308;
-  --gray: #1F2937;
-  --gray-light: #374151;
-  --gray-lighter: #6B7280;
+  --lemon-muted: rgba(253,224,71,0.13);
+  --bg-page: #131313;
+  --bg-surface: #1B1B1B;
+  --bg-surface-hover: #252525;
+  --border: #2A2A2A;
+  --text-secondary: #9B9B9B;
+  --text-tertiary: #5E5E5E;
 }
 
 body {
-  @apply bg-white text-gray font-sans antialiased;
+  @apply bg-[#131313] text-white font-sans antialiased;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background: #1B1B1B;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  background: #5E5E5E;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  background: #9B9B9B;
 }
