@@ -15,9 +15,6 @@ export function Header() {
         </Link>
         <div className="flex items-center gap-6">
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/register" className="text-secondary hover:text-white transition-colors font-medium">
-              Register
-            </Link>
             <Link href="/send" className="text-secondary hover:text-white transition-colors font-medium">
               Send
             </Link>
