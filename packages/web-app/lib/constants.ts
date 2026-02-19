@@ -1,15 +1,3 @@
-export const COLORS = {
-  lemon: '#FDE047',
-  lemonLight: '#FEF9C3',
-  lemonDark: '#EAB308',
-  gray: '#1F2937',
-  grayLight: '#374151',
-  grayLighter: '#6B7280',
-  white: '#FFFFFF',
-  success: '#10B981',
-  error: '#EF4444',
-} as const
-
 export const XX_PROXY_URL = process.env.NEXT_PUBLIC_XX_PROXY_URL || 'http://localhost:8080'
 
 export const REGISTRY_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || ''

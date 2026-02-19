@@ -9,11 +9,11 @@ const config: Config = {
     extend: {
       colors: {
         lemon: {
-          DEFAULT: '#FACC15',
-          bright: '#FDE047',
-          dark: '#CA8A04',
-          muted: 'rgba(250,204,21,0.08)',
-          glow: 'rgba(250,204,21,0.25)',
+          DEFAULT: '#FFD60A',
+          bright: '#FFE548',
+          dark: '#D4A900',
+          muted: 'rgba(255,214,10,0.10)',
+          glow: 'rgba(255,214,10,0.30)',
         },
         surface: {
           DEFAULT: '#0F0F0F',
@@ -23,18 +23,18 @@ const config: Config = {
         border: {
           DEFAULT: '#1A1A1A',
           hover: '#2A2A2A',
-          active: '#333333',
+          active: '#3A3A3A',
         },
-        primary: '#E0E0E0',
-        secondary: '#888888',
-        tertiary: '#555555',
+        primary: '#F0F0F0',
+        secondary: '#999999',
+        tertiary: '#606060',
         accent: {
-          blue: '#4C82FB',
-          'blue-muted': 'rgba(76,130,251,0.08)',
-          green: '#40B66B',
-          'green-muted': 'rgba(64,182,107,0.08)',
-          red: '#FF5F52',
-          'red-muted': 'rgba(255,95,82,0.08)',
+          blue: '#5B9AFF',
+          'blue-muted': 'rgba(91,154,255,0.10)',
+          green: '#34D399',
+          'green-muted': 'rgba(52,211,153,0.10)',
+          red: '#FF6B6B',
+          'red-muted': 'rgba(255,107,107,0.10)',
         },
       },
       fontFamily: {
