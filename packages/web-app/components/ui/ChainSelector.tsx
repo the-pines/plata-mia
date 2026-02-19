@@ -26,7 +26,7 @@ export function ChainSelector({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-secondary mb-1.5">
+        <label className="block text-xs uppercase tracking-wider font-medium text-secondary mb-2">
           {label}
         </label>
       )}
@@ -35,7 +35,7 @@ export function ChainSelector({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className={`w-full px-4 py-2.5 pr-10 bg-surface border border-border rounded-lg text-white appearance-none cursor-pointer focus:outline-none focus:border-lemon focus:ring-1 focus:ring-lemon transition-colors disabled:bg-module disabled:cursor-not-allowed ${error ? 'border-accent-red' : ''}`}
+          className={`w-full px-4 py-2.5 pr-10 bg-surface-page border border-border rounded-sm text-primary appearance-none cursor-pointer focus:outline-none focus:border-lemon focus:shadow-[0_0_0_1px_rgba(250,204,21,0.15)] transition-colors disabled:bg-surface disabled:cursor-not-allowed ${error ? 'border-accent-red' : ''}`}
         >
           {chains.map((chain) => (
             <option key={chain.id} value={chain.id}>
@@ -52,7 +52,7 @@ export function ChainSelector({
         <div className="mt-1.5 flex items-center gap-2 text-xs text-tertiary">
           <ChainTypeBadge type={selectedChain.type} />
           {selectedChain.isTestnet && (
-            <span className="px-1.5 py-0.5 bg-lemon-muted text-lemon rounded">
+            <span className="px-1.5 py-0.5 bg-lemon-muted text-lemon rounded-sm text-xs uppercase tracking-wider">
               Testnet
             </span>
           )}
@@ -70,7 +70,7 @@ function ChainTypeBadge({ type }: { type: 'evm' | 'substrate' }) {
   }
 
   return (
-    <span className={`px-1.5 py-0.5 rounded ${colors[type]}`}>
+    <span className={`px-1.5 py-0.5 rounded-sm text-xs uppercase tracking-wider ${colors[type]}`}>
       {type.toUpperCase()}
     </span>
   )

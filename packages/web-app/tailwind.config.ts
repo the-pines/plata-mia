@@ -9,20 +9,25 @@ const config: Config = {
     extend: {
       colors: {
         lemon: {
-          DEFAULT: '#FDE047',
-          dark: '#EAB308',
-          muted: 'rgba(253,224,71,0.13)',
+          DEFAULT: '#FACC15',
+          bright: '#FDE047',
+          dark: '#CA8A04',
+          muted: 'rgba(250,204,21,0.08)',
+          glow: 'rgba(250,204,21,0.25)',
         },
         surface: {
-          DEFAULT: '#1B1B1B',
-          hover: '#252525',
+          DEFAULT: '#0F0F0F',
+          hover: '#141414',
+          page: '#0A0A0A',
         },
-        module: '#252525',
         border: {
-          DEFAULT: '#2A2A2A',
+          DEFAULT: '#1A1A1A',
+          hover: '#2A2A2A',
+          active: '#333333',
         },
-        secondary: '#9B9B9B',
-        tertiary: '#5E5E5E',
+        primary: '#E0E0E0',
+        secondary: '#888888',
+        tertiary: '#555555',
         accent: {
           blue: '#4C82FB',
           'blue-muted': 'rgba(76,130,251,0.08)',
@@ -33,8 +38,32 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['JetBrains Mono', 'monospace'],
         mono: ['JetBrains Mono', 'monospace'],
+      },
+      keyframes: {
+        blink: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0' },
+        },
+        flicker: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.85' },
+        },
+        'slide-up': {
+          from: { transform: 'translateY(100%)' },
+          to: { transform: 'translateY(0)' },
+        },
+        scanline: {
+          from: { transform: 'translateY(0)' },
+          to: { transform: 'translateY(100%)' },
+        },
+      },
+      animation: {
+        blink: 'blink 1s step-end infinite',
+        flicker: 'flicker 2s ease-in-out infinite',
+        'slide-up': 'slide-up 200ms ease-out',
+        scanline: 'scanline 8s linear infinite',
       },
     },
   },

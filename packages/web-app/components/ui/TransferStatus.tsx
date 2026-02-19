@@ -50,7 +50,7 @@ export function TransferStatus({
         ) : (
           <SpinnerIcon className="w-5 h-5 text-lemon animate-spin" />
         )}
-        <span className="font-medium text-white">
+        <span className="font-medium text-primary text-xs uppercase tracking-wider">
           {isError ? 'Transfer Failed' : isComplete ? 'Transfer Complete' : 'Processing...'}
         </span>
       </div>
@@ -64,11 +64,11 @@ export function TransferStatus({
           return (
             <div key={step.key} className="relative flex items-start gap-3 py-2">
               <div
-                className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center ${
+                className={`relative z-10 w-6 h-6 rounded-sm flex items-center justify-center ${
                   isDone
                     ? 'bg-accent-green'
                     : isActive
-                      ? 'bg-lemon'
+                      ? 'bg-lemon animate-flicker'
                       : isError && index === currentStepIndex
                         ? 'bg-accent-red'
                         : 'bg-border'
@@ -77,20 +77,20 @@ export function TransferStatus({
                 {isDone ? (
                   <CheckIcon className="w-3.5 h-3.5 text-white" />
                 ) : isActive ? (
-                  <div className="w-2 h-2 bg-[#131313] rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-surface-page rounded-sm" />
                 ) : isError && index === currentStepIndex ? (
                   <ErrorIcon className="w-3.5 h-3.5 text-white" />
                 ) : (
-                  <div className="w-2 h-2 bg-tertiary rounded-full" />
+                  <div className="w-2 h-2 bg-tertiary rounded-sm" />
                 )}
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
                 <span
-                  className={`text-sm ${
+                  className={`text-xs uppercase tracking-wider ${
                     isDone
-                      ? 'text-white'
+                      ? 'text-primary'
                       : isActive
-                        ? 'text-white font-medium'
+                        ? 'text-primary font-medium'
                         : 'text-tertiary'
                   }`}
                 >
@@ -103,7 +103,7 @@ export function TransferStatus({
       </div>
 
       {error && (
-        <div className="p-3 bg-accent-red-muted border border-accent-red/20 rounded-lg">
+        <div className="p-3 bg-accent-red-muted border border-accent-red/20 rounded-sm">
           <p className="text-sm text-accent-red">{error}</p>
         </div>
       )}
@@ -113,7 +113,7 @@ export function TransferStatus({
           href={`${sourceExplorerUrl}/tx/${sourceTxHash}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm text-accent-blue hover:underline"
+          className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-accent-blue hover:underline"
         >
           View on explorer
           <ExternalLinkIcon className="w-3.5 h-3.5" />

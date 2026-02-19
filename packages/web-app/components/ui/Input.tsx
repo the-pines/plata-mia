@@ -12,13 +12,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-secondary mb-1.5">
+          <label className="block text-xs uppercase tracking-wider font-medium text-secondary mb-2">
             {label}
           </label>
         )}
         <input
           ref={ref}
-          className={`w-full px-4 py-2.5 bg-surface border border-border rounded-lg text-white placeholder-tertiary focus:outline-none focus:border-lemon focus:ring-1 focus:ring-lemon transition-colors ${error ? 'border-accent-red' : ''} ${className}`}
+          className={`w-full px-4 py-2.5 bg-surface-page border border-border rounded-sm text-primary placeholder-tertiary focus:outline-none focus:border-lemon focus:shadow-[0_0_0_1px_rgba(250,204,21,0.15)] transition-colors ${error ? 'border-accent-red' : ''} ${className}`}
           {...props}
         />
         {error && (
