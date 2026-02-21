@@ -19,18 +19,18 @@ export function KeyDisplay({ label, value, copyable = true }: KeyDisplayProps) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-1.5">
-        <label className="text-sm font-medium text-gray">{label}</label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-xs uppercase tracking-wider font-medium text-secondary">{label}</label>
         {copyable && (
           <button
             onClick={handleCopy}
-            className="text-xs text-gray-lighter hover:text-gray transition-colors"
+            className="text-xs uppercase tracking-wider text-tertiary hover:text-lemon transition-colors"
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>
         )}
       </div>
-      <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm text-gray break-all">
+      <div className="w-full px-4 py-3 bg-surface-page border border-dashed border-border rounded-sm text-sm text-primary break-all">
         {value}
       </div>
     </div>

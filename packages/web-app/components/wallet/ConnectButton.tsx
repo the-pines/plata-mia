@@ -63,15 +63,18 @@ export function ConnectButton() {
   if (isConnected && account) {
     return (
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-dashed border-border rounded-sm">
           <WalletIcon type={walletType} />
-          <span className="text-sm font-mono text-gray">
+          <span className="text-xs text-primary">
             {account.name ? `${account.name} (${truncateAddress(account.address)})` : truncateAddress(account.address)}
           </span>
         </div>
-        <Button variant="outline" size="sm" onClick={disconnect}>
+        <button
+          onClick={disconnect}
+          className="text-xs uppercase tracking-wider text-tertiary hover:text-accent-red transition-colors"
+        >
           Disconnect
-        </Button>
+        </button>
       </div>
     )
   }
@@ -80,10 +83,10 @@ export function ConnectButton() {
     <>
       <div className="flex flex-col items-end gap-1">
         <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>
-          Connect Wallet
+          Connect
         </Button>
         {error && (
-          <span className="text-xs text-red-500 max-w-[200px] text-right">
+          <span className="text-xs text-accent-red max-w-[200px] text-right">
             {error}
           </span>
         )}

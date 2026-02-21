@@ -32,7 +32,6 @@ export function TransferStatus({
   isCrossChain,
   sourceTxHash,
   sourceExplorerUrl,
-  destExplorerUrl,
   error,
 }: TransferStatusProps) {
   const steps = isCrossChain ? STATUS_STEPS_CROSS_CHAIN : STATUS_STEPS_SAME_CHAIN
@@ -45,56 +44,54 @@ export function TransferStatus({
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         {isComplete ? (
-          <CheckIcon className="w-5 h-5 text-green-500" />
+          <CheckIcon className="w-5 h-5 text-accent-green" />
         ) : isError ? (
-          <ErrorIcon className="w-5 h-5 text-red-500" />
+          <ErrorIcon className="w-5 h-5 text-accent-red" />
         ) : (
           <SpinnerIcon className="w-5 h-5 text-lemon animate-spin" />
         )}
-        <span className="font-medium text-gray">
+        <span className="font-medium text-primary text-xs uppercase tracking-wider">
           {isError ? 'Transfer Failed' : isComplete ? 'Transfer Complete' : 'Processing...'}
         </span>
       </div>
 
       <div className="relative">
-        <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gray-200" />
+        <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-border" />
 
         {steps.map((step, index) => {
           const isActive = index === currentStepIndex && !isError
           const isDone = index < currentStepIndex || isComplete
-          const isPending = index > currentStepIndex
-
           return (
             <div key={step.key} className="relative flex items-start gap-3 py-2">
               <div
-                className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center ${
+                className={`relative z-10 w-6 h-6 rounded-sm flex items-center justify-center ${
                   isDone
-                    ? 'bg-green-500'
+                    ? 'bg-accent-green'
                     : isActive
-                      ? 'bg-lemon'
+                      ? 'bg-lemon animate-flicker'
                       : isError && index === currentStepIndex
-                        ? 'bg-red-500'
-                        : 'bg-gray-200'
+                        ? 'bg-accent-red'
+                        : 'bg-border'
                 }`}
               >
                 {isDone ? (
                   <CheckIcon className="w-3.5 h-3.5 text-white" />
                 ) : isActive ? (
-                  <div className="w-2 h-2 bg-gray rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-surface-page rounded-sm" />
                 ) : isError && index === currentStepIndex ? (
                   <ErrorIcon className="w-3.5 h-3.5 text-white" />
                 ) : (
-                  <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                  <div className="w-2 h-2 bg-tertiary rounded-sm" />
                 )}
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
                 <span
-                  className={`text-sm ${
+                  className={`text-xs uppercase tracking-wider ${
                     isDone
-                      ? 'text-gray'
+                      ? 'text-primary'
                       : isActive
-                        ? 'text-gray font-medium'
-                        : 'text-gray-lighter'
+                        ? 'text-primary font-medium'
+                        : 'text-tertiary'
                   }`}
                 >
                   {step.label}
@@ -106,8 +103,8 @@ export function TransferStatus({
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="p-3 bg-accent-red-muted border border-accent-red/20 rounded-sm">
+          <p className="text-sm text-accent-red">{error}</p>
         </div>
       )}
 
@@ -116,7 +113,7 @@ export function TransferStatus({
           href={`${sourceExplorerUrl}/tx/${sourceTxHash}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+          className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-accent-blue hover:underline"
         >
           View on explorer
           <ExternalLinkIcon className="w-3.5 h-3.5" />

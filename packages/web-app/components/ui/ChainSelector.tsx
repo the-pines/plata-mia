@@ -26,7 +26,7 @@ export function ChainSelector({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-gray mb-1.5">
+        <label className="block text-xs uppercase tracking-wider font-medium text-secondary mb-2">
           {label}
         </label>
       )}
@@ -35,7 +35,7 @@ export function ChainSelector({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className={`w-full px-4 py-2.5 pr-10 border-2 border-gray-200 rounded-lg text-gray bg-white appearance-none cursor-pointer focus:outline-none focus:border-lemon focus:ring-1 focus:ring-lemon transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed ${error ? 'border-red-500' : ''}`}
+          className={`w-full px-4 py-2.5 pr-10 bg-surface-page border border-border rounded-sm text-primary appearance-none cursor-pointer focus:outline-none focus:border-lemon focus:shadow-[0_0_0_1px_rgba(255,214,10,0.15)] transition-colors disabled:bg-surface disabled:cursor-not-allowed ${error ? 'border-accent-red' : ''}`}
         >
           {chains.map((chain) => (
             <option key={chain.id} value={chain.id}>
@@ -49,28 +49,28 @@ export function ChainSelector({
         </div>
       </div>
       {selectedChain && (
-        <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-lighter">
+        <div className="mt-1.5 flex items-center gap-2 text-xs text-tertiary">
           <ChainTypeBadge type={selectedChain.type} />
           {selectedChain.isTestnet && (
-            <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">
+            <span className="px-1.5 py-0.5 bg-lemon-muted text-lemon rounded-sm text-xs uppercase tracking-wider">
               Testnet
             </span>
           )}
         </div>
       )}
-      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-sm text-accent-red">{error}</p>}
     </div>
   )
 }
 
 function ChainTypeBadge({ type }: { type: 'evm' | 'substrate' }) {
   const colors = {
-    evm: 'bg-blue-100 text-blue-700',
-    substrate: 'bg-purple-100 text-purple-700',
+    evm: 'bg-accent-blue-muted text-accent-blue',
+    substrate: 'bg-[#7B61FF15] text-[#7B61FF]',
   }
 
   return (
-    <span className={`px-1.5 py-0.5 rounded ${colors[type]}`}>
+    <span className={`px-1.5 py-0.5 rounded-sm text-xs uppercase tracking-wider ${colors[type]}`}>
       {type.toUpperCase()}
     </span>
   )
@@ -79,7 +79,7 @@ function ChainTypeBadge({ type }: { type: 'evm' | 'substrate' }) {
 function ChevronDownIcon() {
   return (
     <svg
-      className="w-4 h-4 text-gray-lighter"
+      className="w-4 h-4 text-tertiary"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"

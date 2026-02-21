@@ -82,50 +82,54 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting }: WalletM
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60">
       <div
         ref={modalRef}
-        className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl"
+        className="bg-surface rounded-t-sm border-t border-x border-border w-full max-w-[480px] animate-slide-up"
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray">Connect Wallet</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-            disabled={isConnecting}
-          >
-            <svg className="w-5 h-5 text-gray-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        <div className="w-12 h-1 bg-border-hover rounded-full mx-auto mt-3 mb-4" />
 
-        <div className="space-y-3">
-          {walletOptions.map((option) => (
+        <div className="px-6 pb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm uppercase tracking-wider text-secondary">Connect Wallet</h2>
             <button
-              key={option.type}
-              onClick={() => option.type && onSelect(option.type)}
+              onClick={onClose}
+              className="p-1 hover:bg-surface-hover rounded-sm transition-colors"
               disabled={isConnecting}
-              className="w-full flex items-center gap-4 p-4 border-2 border-gray-100 rounded-lg hover:border-lemon hover:bg-lemon-light transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <div className="flex-shrink-0">{option.icon}</div>
-              <div className="flex-1 text-left">
-                <div className="font-medium text-gray">{option.name}</div>
-                <div className="text-sm text-gray-lighter">{option.description}</div>
-              </div>
-              {isConnecting && (
-                <svg className="animate-spin h-5 w-5 text-gray-light" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-              )}
+              <svg className="w-5 h-5 text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
-          ))}
-        </div>
+          </div>
 
-        <p className="mt-4 text-xs text-gray-lighter text-center">
-          By connecting, you agree to use this application responsibly.
-        </p>
+          <div className="space-y-3">
+            {walletOptions.map((option) => (
+              <button
+                key={option.type}
+                onClick={() => option.type && onSelect(option.type)}
+                disabled={isConnecting}
+                className="w-full flex items-center gap-4 p-4 border border-dashed border-border rounded-sm hover:border-lemon/30 hover:bg-lemon-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex-shrink-0">{option.icon}</div>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-primary text-sm">{option.name}</div>
+                  <div className="text-xs text-tertiary">{option.description}</div>
+                </div>
+                {isConnecting && (
+                  <svg className="animate-spin h-5 w-5 text-tertiary" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <p className="mt-4 text-xs text-tertiary text-center uppercase tracking-wider">
+            By connecting, you agree to use this application responsibly.
+          </p>
+        </div>
       </div>
     </div>
   )
