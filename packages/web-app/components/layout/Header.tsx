@@ -1,17 +1,65 @@
 'use client'
 
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { ConnectButton } from '@/components/wallet'
+import { useWallet } from '@/hooks/useWallet'
+
+const WORD = 'plata_mia'
+const TYPE_SPEED = 120
+const ERASE_SPEED = 80
+const PAUSE_FULL = 2000
+const PAUSE_EMPTY = 800
+
+function useTypewriter(active: boolean) {
+  const [text, setText] = useState('')
+  const [erasing, setErasing] = useState(false)
+
+  useEffect(() => {
+    if (!active) { setText(''); return }
+
+    let timeout: ReturnType<typeof setTimeout>
+
+    if (!erasing) {
+      if (text.length < WORD.length) {
+        timeout = setTimeout(() => setText(WORD.slice(0, text.length + 1)), TYPE_SPEED)
+      } else {
+        timeout = setTimeout(() => setErasing(true), PAUSE_FULL)
+      }
+    } else {
+      if (text.length > 0) {
+        timeout = setTimeout(() => setText(text.slice(0, -1)), ERASE_SPEED)
+      } else {
+        timeout = setTimeout(() => setErasing(false), PAUSE_EMPTY)
+      }
+    }
+
+    return () => clearTimeout(timeout)
+  }, [active, text, erasing])
+
+  return text
+}
 
 export function Header() {
+  const { isConnected } = useWallet()
+  const typed = useTypewriter(isConnected)
+
   return (
-    <header className="shadow-[0_1px_0_0_#1A1A1A] px-4 py-3 flex items-center justify-between">
-      <Link href="/" className="flex items-center gap-2">
-        <div className="w-7 h-7 bg-lemon rounded-sm flex items-center justify-center">
-          <span className="text-surface-page font-bold text-sm">P</span>
-        </div>
-        <span className="text-base uppercase tracking-wider font-medium text-primary">Plata Mia</span>
-      </Link>
+    <header className="border-b border-border px-4 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        {isConnected ? (
+          <>
+            <span className="block w-1.5 h-1.5 rounded-full bg-phosphor dot-pulse" />
+            <span className="text-xs uppercase tracking-wider text-phosphor text-glow">
+              {typed}
+              <span className="animate-blink">_</span>
+            </span>
+          </>
+        ) : (
+          <span className="text-xs uppercase tracking-wider text-accent-red">
+            ○ locked
+          </span>
+        )}
+      </div>
       <ConnectButton />
     </header>
   )

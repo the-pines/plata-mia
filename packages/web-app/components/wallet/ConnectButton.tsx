@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useWallet, truncateAddress } from '@/hooks/useWallet'
 import { type WalletType } from '@/stores/walletStore'
 import { Button } from '@/components/ui'
@@ -38,6 +38,19 @@ export function ConnectButton() {
   } = useWallet()
 
   const [showModal, setShowModal] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showMenu) return
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showMenu])
 
   const handleSelectWallet = async (type: WalletType) => {
     if (type === 'metamask') {
@@ -62,19 +75,29 @@ export function ConnectButton() {
 
   if (isConnected && account) {
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-dashed border-border rounded-sm">
+      <div ref={menuRef} className="relative">
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-border rounded-sm hover:border-phosphor/30 transition-colors cursor-pointer"
+        >
           <WalletIcon type={walletType} />
           <span className="text-xs text-primary">
             {account.name ? `${account.name} (${truncateAddress(account.address)})` : truncateAddress(account.address)}
           </span>
-        </div>
-        <button
-          onClick={disconnect}
-          className="text-xs uppercase tracking-wider text-tertiary hover:text-accent-red transition-colors"
-        >
-          Disconnect
         </button>
+        {showMenu && (
+          <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-sm overflow-hidden z-50">
+            <button
+              onClick={() => {
+                disconnect()
+                setShowMenu(false)
+              }}
+              className="w-full px-4 py-2 text-xs uppercase tracking-wider text-accent-red hover:bg-surface-hover transition-colors text-left whitespace-nowrap"
+            >
+              disconnect
+            </button>
+          </div>
+        )}
       </div>
     )
   }

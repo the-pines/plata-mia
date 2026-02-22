@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { type HistoryEntry, TERMINAL_STATUSES } from '@/types/history'
 import { getChainById } from '@/lib/chains'
 import { getHyperbridgeExplorerLink } from '@/lib/constants'
@@ -11,9 +12,9 @@ interface HistoryCardProps {
 
 const STATUS_CONFIG = {
   pending:          { dot: 'bg-tertiary' },
-  source_finalized: { dot: 'bg-lemon' },
-  relaying:         { dot: 'bg-accent-blue' },
-  completed:        { dot: 'bg-accent-green' },
+  source_finalized: { dot: 'bg-phosphor' },
+  relaying:         { dot: 'bg-accent-cyan' },
+  completed:        { dot: 'bg-phosphor' },
   failed:           { dot: 'bg-accent-red' },
   timeout:          { dot: 'bg-orange-500' },
 } as const
@@ -63,19 +64,19 @@ function BridgeProgress({ status }: { status: string }) {
         return (
           <div key={step.key} className="flex items-center gap-1">
             {i > 0 && (
-              <div className={`w-6 h-0.5 ${done || active ? 'bg-accent-blue' : 'bg-border'}`} />
+              <div className={`w-6 h-0.5 ${done || active ? 'bg-accent-cyan' : 'bg-border'}`} />
             )}
             <div className="flex items-center gap-1">
               {done ? (
-                <svg className="w-3.5 h-3.5 text-accent-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-phosphor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               ) : active ? (
-                <Spinner className="w-3.5 h-3.5 text-accent-blue" />
+                <Spinner className="w-3.5 h-3.5 text-accent-cyan" />
               ) : (
                 <div className="w-3.5 h-3.5 rounded-sm border-2 border-border" />
               )}
-              <span className={`text-xs uppercase tracking-wider ${done ? 'text-accent-green' : active ? 'text-accent-blue font-medium' : 'text-tertiary'}`}>
+              <span className={`text-xs uppercase tracking-wider ${done ? 'text-phosphor' : active ? 'text-accent-cyan font-medium' : 'text-tertiary'}`}>
                 {step.label}
               </span>
             </div>
@@ -87,6 +88,7 @@ function BridgeProgress({ status }: { status: string }) {
 }
 
 export function HistoryCard({ entry }: HistoryCardProps) {
+  const [open, setOpen] = useState(false)
   const sourceChain = getChainById(entry.sourceChainId)
   const destChain = getChainById(entry.destChainId)
   const config = STATUS_CONFIG[entry.status]
@@ -97,68 +99,89 @@ export function HistoryCard({ entry }: HistoryCardProps) {
   const isActive = !isTerminal && (entry.status === 'pending' || entry.status === 'relaying')
 
   return (
-    <Card className="space-y-3">
-      <div className="flex items-start justify-between">
+    <Card className="!p-0 overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-surface-hover transition-colors"
+      >
         <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${isTerminal ? config.dot : 'bg-lemon'} ${isActive ? 'animate-flicker' : ''}`} />
+          <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${isTerminal ? config.dot : 'bg-phosphor'} ${isActive ? 'animate-flicker' : ''}`} />
           <span className="font-medium text-primary">
             {entry.amount} {entry.tokenSymbol}
           </span>
         </div>
-        <span className="text-xs text-tertiary">{formatTimeAgo(entry.timestamp)}</span>
-      </div>
-
-      <div className="text-xs text-secondary">
-        <span className="uppercase tracking-wider">To:</span> <span className="text-primary">{entry.hint}</span>
-      </div>
-
-      <div className="text-xs text-secondary">
-        {sourceChain?.name ?? entry.sourceChainId}
-        {' → '}
-        {destChain?.name ?? entry.destChainId}
-      </div>
-
-      {isCrossChain && !entry.status.startsWith('fail') && entry.status !== 'timeout' && (
-        <BridgeProgress status={entry.status} />
-      )}
-
-      <div className="flex items-center gap-3 pt-2 border-t border-border text-xs flex-wrap">
-        {sourceChain?.explorerUrl && entry.txHash && (
-          <a
-            href={`${sourceChain.explorerUrl}/tx/${entry.txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent-blue hover:underline"
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-tertiary">{formatTimeAgo(entry.timestamp)}</span>
+          <span
+            className="text-tertiary text-[10px] transition-transform duration-200"
+            style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
           >
-            View on {sourceChain.name}
-          </a>
-        )}
-        {isCrossChain && bridgeExplorerLink && (
-          <>
-            <span className="text-tertiary">|</span>
-            <a
-              href={bridgeExplorerLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent-blue hover:underline"
-            >
-              View on Hyperbridge
-            </a>
-          </>
-        )}
-        {isCrossChain && entry.destTxHash && destChain?.explorerUrl && (
-          <>
-            <span className="text-tertiary">|</span>
-            <a
-              href={`${destChain.explorerUrl}/tx/${entry.destTxHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent-blue hover:underline"
-            >
-              View on {destChain.name}
-            </a>
-          </>
-        )}
+            ▶
+          </span>
+        </div>
+      </button>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-5 pb-4 space-y-3 border-t border-border">
+            <div className="text-xs text-secondary pt-3">
+              <span className="uppercase tracking-wider">To:</span>{' '}
+              <span className="text-primary">{entry.hint}</span>
+            </div>
+
+            <div className="text-xs text-secondary">
+              {sourceChain?.name ?? entry.sourceChainId}
+              {' → '}
+              {destChain?.name ?? entry.destChainId}
+            </div>
+
+            {isCrossChain && !entry.status.startsWith('fail') && entry.status !== 'timeout' && (
+              <BridgeProgress status={entry.status} />
+            )}
+
+            <div className="flex items-center gap-3 pt-2 border-t border-border text-xs flex-wrap">
+              {sourceChain?.explorerUrl && entry.txHash && (
+                <a
+                  href={`${sourceChain.explorerUrl}/tx/${entry.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent-cyan hover:underline"
+                >
+                  View on {sourceChain.name}
+                </a>
+              )}
+              {isCrossChain && bridgeExplorerLink && (
+                <>
+                  <span className="text-tertiary">|</span>
+                  <a
+                    href={bridgeExplorerLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-cyan hover:underline"
+                  >
+                    View on Hyperbridge
+                  </a>
+                </>
+              )}
+              {isCrossChain && entry.destTxHash && destChain?.explorerUrl && (
+                <>
+                  <span className="text-tertiary">|</span>
+                  <a
+                    href={`${destChain.explorerUrl}/tx/${entry.destTxHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-cyan hover:underline"
+                  >
+                    View on {destChain.name}
+                  </a>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </Card>
   )

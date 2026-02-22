@@ -250,8 +250,8 @@ export default function SendPage() {
       <div className="w-full space-y-6">
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-lemon rounded-sm flex items-center justify-center">
-              <svg className="w-5 h-5 text-surface-page" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 bg-phosphor-muted rounded-sm flex items-center justify-center">
+              <svg className="w-5 h-5 text-phosphor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
@@ -298,8 +298,8 @@ export default function SendPage() {
               </div>
 
               {isCrossChain && (
-                <div className="p-3 bg-accent-blue-muted border border-accent-blue/20 rounded-sm">
-                  <p className="text-xs uppercase tracking-wider text-accent-blue">
+                <div className="p-3 bg-accent-cyan-muted border border-accent-cyan/20 rounded-sm">
+                  <p className="text-xs uppercase tracking-wider text-accent-cyan">
                     Cross-chain transfer via Hyperbridge
                   </p>
                 </div>
@@ -321,7 +321,7 @@ export default function SendPage() {
           {step === 'send' && recipient && derivedAddress && sourceChain && destChain && (
             <div className="space-y-6">
               <Card className="space-y-4">
-                <div className="p-4 bg-surface-page border border-dashed border-border rounded-sm space-y-3">
+                <div className="p-4 bg-surface-page border border-border rounded-sm space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase tracking-wider text-secondary">Hint</span>
                     <span className="text-primary">{hint}</span>
@@ -343,7 +343,7 @@ export default function SendPage() {
                   {isCrossChain && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs uppercase tracking-wider text-secondary">Transfer Type</span>
-                      <span className="text-accent-blue font-medium">Cross-chain (Hyperbridge)</span>
+                      <span className="text-accent-cyan font-medium">Cross-chain (Hyperbridge)</span>
                     </div>
                   )}
                 </div>
@@ -364,7 +364,7 @@ export default function SendPage() {
                 />
 
                 {!isCrossChain && sourceChain.type === 'evm' && (
-                  <div className="p-4 bg-lemon-muted rounded-sm border border-lemon/20">
+                  <div className="p-4 bg-phosphor-muted rounded-sm border border-phosphor/20">
                     <p className="text-xs text-primary">
                       <span className="font-medium">Note:</span> This will send a native token
                       transfer to the derived stealth address via your connected wallet.
@@ -373,8 +373,8 @@ export default function SendPage() {
                 )}
 
                 {isCrossChain && (
-                  <div className="p-4 bg-accent-blue-muted rounded-sm border border-accent-blue/20">
-                    <p className="text-xs text-accent-blue">
+                  <div className="p-4 bg-accent-cyan-muted rounded-sm border border-accent-cyan/20">
+                    <p className="text-xs text-accent-cyan">
                       <span className="font-medium">Cross-chain transfer:</span> This will use
                       Hyperbridge to securely bridge your tokens. Transfer may take a few
                       minutes.
@@ -415,7 +415,7 @@ export default function SendPage() {
           {step === 'done' && derivedAddress && sourceChain && destChain && (
             <Card variant="highlight" className="space-y-6">
               <div className="space-y-4">
-                <div className="p-4 bg-surface-page border border-dashed border-border rounded-sm space-y-2">
+                <div className="p-4 bg-surface-page border border-border rounded-sm space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="uppercase tracking-wider text-secondary">From</span>
                     <span className="text-primary">{sourceChain.name}</span>
@@ -437,7 +437,7 @@ export default function SendPage() {
                   href={`${sourceChain.explorerUrl}/tx/${txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-accent-blue hover:underline"
+                  className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-accent-cyan hover:underline"
                 >
                   View on {sourceChain.name} Explorer
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -44,13 +44,13 @@ export function TransferStatus({
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         {isComplete ? (
-          <CheckIcon className="w-5 h-5 text-accent-green" />
+          <CheckIcon className="w-5 h-5 text-phosphor" />
         ) : isError ? (
           <ErrorIcon className="w-5 h-5 text-accent-red" />
         ) : (
-          <SpinnerIcon className="w-5 h-5 text-lemon animate-spin" />
+          <SpinnerIcon className="w-5 h-5 text-phosphor animate-spin" />
         )}
-        <span className="font-medium text-primary text-xs uppercase tracking-wider">
+        <span className="font-medium text-primary text-xs uppercase tracking-wider text-glow">
           {isError ? 'Transfer Failed' : isComplete ? 'Transfer Complete' : 'Processing...'}
         </span>
       </div>
@@ -66,16 +66,16 @@ export function TransferStatus({
               <div
                 className={`relative z-10 w-6 h-6 rounded-sm flex items-center justify-center ${
                   isDone
-                    ? 'bg-accent-green'
+                    ? 'bg-phosphor'
                     : isActive
-                      ? 'bg-lemon animate-flicker'
+                      ? 'bg-phosphor animate-glow-pulse'
                       : isError && index === currentStepIndex
                         ? 'bg-accent-red'
                         : 'bg-border'
                 }`}
               >
                 {isDone ? (
-                  <CheckIcon className="w-3.5 h-3.5 text-white" />
+                  <CheckIcon className="w-3.5 h-3.5 text-surface-page" />
                 ) : isActive ? (
                   <div className="w-2 h-2 bg-surface-page rounded-sm" />
                 ) : isError && index === currentStepIndex ? (
@@ -90,7 +90,7 @@ export function TransferStatus({
                     isDone
                       ? 'text-primary'
                       : isActive
-                        ? 'text-primary font-medium'
+                        ? 'text-phosphor font-medium text-glow'
                         : 'text-tertiary'
                   }`}
                 >
@@ -113,7 +113,7 @@ export function TransferStatus({
           href={`${sourceExplorerUrl}/tx/${sourceTxHash}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-accent-blue hover:underline"
+          className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-accent-cyan hover:underline"
         >
           View on explorer
           <ExternalLinkIcon className="w-3.5 h-3.5" />

@@ -24,13 +24,13 @@ export function KeyDisplay({ label, value, copyable = true }: KeyDisplayProps) {
         {copyable && (
           <button
             onClick={handleCopy}
-            className="text-xs uppercase tracking-wider text-tertiary hover:text-lemon transition-colors"
+            className="text-xs uppercase tracking-wider text-tertiary hover:text-phosphor transition-colors"
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>
         )}
       </div>
-      <div className="w-full px-4 py-3 bg-surface-page border border-dashed border-border rounded-sm text-sm text-primary break-all">
+      <div className="w-full px-4 py-3 bg-surface-page border-l-2 border-l-phosphor/30 border border-border rounded-sm text-sm text-phosphor/80 break-all">
         {value}
       </div>
     </div>

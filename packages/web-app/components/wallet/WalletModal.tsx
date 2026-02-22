@@ -82,12 +82,12 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting }: WalletM
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70">
       <div
         ref={modalRef}
         className="bg-surface rounded-t-sm border-t border-x border-border w-full max-w-[480px] animate-slide-up"
       >
-        <div className="w-12 h-1 bg-border-hover rounded-full mx-auto mt-3 mb-4" />
+        <div className="w-12 h-0.5 bg-phosphor/30 mx-auto mt-3 mb-4" />
 
         <div className="px-6 pb-6">
           <div className="flex items-center justify-between mb-6">
@@ -109,7 +109,7 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting }: WalletM
                 key={option.type}
                 onClick={() => option.type && onSelect(option.type)}
                 disabled={isConnecting}
-                className="w-full flex items-center gap-4 p-4 border border-dashed border-border rounded-sm hover:border-lemon/30 hover:bg-lemon-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center gap-4 p-4 border border-border rounded-sm hover:border-phosphor/30 hover:bg-phosphor-muted hover:shadow-[0_0_12px_-4px_rgba(0,255,65,0.2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex-shrink-0">{option.icon}</div>
                 <div className="flex-1 text-left">
