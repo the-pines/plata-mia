@@ -191,8 +191,8 @@ export function RegisterFlow({ onComplete }: RegisterFlowProps) {
           {existingEntry && existingEntryHint ? (
             <Card className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-accent-green-muted rounded-sm flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-accent-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-8 h-8 bg-phosphor-muted rounded-sm flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-phosphor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
@@ -252,15 +252,15 @@ export function RegisterFlow({ onComplete }: RegisterFlowProps) {
 
       {step === 'register' && spending && viewing && (
         <div className="space-y-6">
-          <Card variant="highlight" className="space-y-4">
+          <Card variant="highlight" className="space-y-4 border-accent-amber/20 bg-accent-amber-muted">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-lemon rounded-sm flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-surface-page" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 bg-accent-amber/20 rounded-sm flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-accent-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-xs uppercase tracking-wider font-medium text-primary">Back up your keys!</h3>
+                <h3 className="text-xs uppercase tracking-wider font-medium text-accent-amber">Back up your keys!</h3>
                 <p className="text-xs text-secondary">
                   Your keys will be saved to this browser after registration, but for extra safety you can
                   expand and copy the raw keys below.
@@ -316,7 +316,7 @@ export function RegisterFlow({ onComplete }: RegisterFlowProps) {
         <Card variant="highlight" className="space-y-6">
           <div className="space-y-2 text-sm text-secondary">
             {keysSaved && (
-              <p className="text-accent-green flex items-center gap-1">
+              <p className="text-phosphor flex items-center gap-1 text-glow">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>

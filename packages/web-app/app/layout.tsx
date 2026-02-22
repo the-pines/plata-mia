@@ -18,6 +18,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen flex justify-center bg-surface-page">
         <Providers>
+          <div className="crt-overlay" />
+          <div className="crt-vignette" />
           <div className="w-full max-w-[480px] min-h-screen flex flex-col relative overflow-x-hidden">
             <Header />
             <main className="flex-1 flex flex-col px-4 pt-8 pb-24">
@@ -25,7 +27,17 @@ export default function RootLayout({
             </main>
             <BottomNav />
           </div>
-          <Toaster />
+          <Toaster
+            toastOptions={{
+              style: {
+                background: '#0A0F0A',
+                color: '#C0FFC0',
+                border: '1px solid #0D1A0D',
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: '12px',
+              },
+            }}
+          />
         </Providers>
       </body>
     </html>

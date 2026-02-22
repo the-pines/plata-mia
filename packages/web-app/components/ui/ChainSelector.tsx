@@ -35,7 +35,7 @@ export function ChainSelector({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className={`w-full px-4 py-2.5 pr-10 bg-surface-page border border-border rounded-sm text-primary appearance-none cursor-pointer focus:outline-none focus:border-lemon focus:shadow-[0_0_0_1px_rgba(255,214,10,0.15)] transition-colors disabled:bg-surface disabled:cursor-not-allowed ${error ? 'border-accent-red' : ''}`}
+          className={`w-full px-4 py-2.5 pr-10 bg-surface-page border border-border rounded-sm text-primary appearance-none cursor-pointer focus:outline-none focus:border-phosphor focus:shadow-[0_0_0_1px_rgba(0,255,65,0.15)] transition-colors disabled:bg-surface disabled:cursor-not-allowed ${error ? 'border-accent-red' : ''}`}
         >
           {chains.map((chain) => (
             <option key={chain.id} value={chain.id}>
@@ -52,7 +52,7 @@ export function ChainSelector({
         <div className="mt-1.5 flex items-center gap-2 text-xs text-tertiary">
           <ChainTypeBadge type={selectedChain.type} />
           {selectedChain.isTestnet && (
-            <span className="px-1.5 py-0.5 bg-lemon-muted text-lemon rounded-sm text-xs uppercase tracking-wider">
+            <span className="px-1.5 py-0.5 bg-phosphor-muted text-phosphor rounded-sm text-xs uppercase tracking-wider">
               Testnet
             </span>
           )}
@@ -65,8 +65,8 @@ export function ChainSelector({
 
 function ChainTypeBadge({ type }: { type: 'evm' | 'substrate' }) {
   const colors = {
-    evm: 'bg-accent-blue-muted text-accent-blue',
-    substrate: 'bg-[#7B61FF15] text-[#7B61FF]',
+    evm: 'bg-accent-cyan-muted text-accent-cyan',
+    substrate: 'bg-phosphor-muted text-phosphor',
   }
 
   return (

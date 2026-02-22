@@ -14,7 +14,7 @@ interface TabBarProps {
 
 export function TabBar({ tabs, activeTab, onChange }: TabBarProps) {
   return (
-    <div className="flex bg-surface border border-dashed border-border rounded-sm p-1">
+    <div className="flex bg-surface border border-border rounded-sm p-1">
       {tabs.map((tab) => {
         const isActive = tab.key === activeTab
         return (
@@ -23,7 +23,7 @@ export function TabBar({ tabs, activeTab, onChange }: TabBarProps) {
             onClick={() => onChange(tab.key)}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-medium rounded-sm transition-all duration-150 ${
               isActive
-                ? 'bg-surface-hover text-lemon border border-border-hover'
+                ? 'bg-phosphor-muted text-phosphor text-glow border border-phosphor/20'
                 : 'text-tertiary hover:text-secondary border border-transparent'
             }`}
           >
@@ -32,7 +32,7 @@ export function TabBar({ tabs, activeTab, onChange }: TabBarProps) {
               <span
                 className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-medium rounded-sm ${
                   isActive
-                    ? 'bg-lemon text-surface-page'
+                    ? 'bg-phosphor text-surface-page'
                     : 'bg-border text-tertiary'
                 }`}
               >
