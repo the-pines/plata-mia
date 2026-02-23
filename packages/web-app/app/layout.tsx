@@ -28,6 +28,7 @@ export default function RootLayout({
             <BottomNav />
           </div>
           <Toaster
+            position="top-center"
             toastOptions={{
               style: {
                 background: '#0A0F0A',
@@ -35,6 +36,8 @@ export default function RootLayout({
                 border: '1px solid #0D1A0D',
                 fontFamily: 'JetBrains Mono, monospace',
                 fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
               },
             }}
           />

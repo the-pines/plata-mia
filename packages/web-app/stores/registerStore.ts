@@ -12,6 +12,7 @@ interface RegisterState {
   loading: boolean
   storing: boolean
   keysSaved: boolean
+  saveFailed: boolean
   savePassword: string
   showRawKeys: boolean
   loadingEntry: boolean
@@ -25,6 +26,7 @@ interface RegisterActions {
   setKeys: (spending: KeyPair, viewing: KeyPair) => void
   setStoring: (storing: boolean) => void
   setKeysSaved: (saved: boolean) => void
+  setSaveFailed: (failed: boolean) => void
   setLoading: (loading: boolean) => void
   setShowRawKeys: (show: boolean) => void
   setLoadingEntry: (loading: boolean) => void
@@ -41,6 +43,7 @@ const initialState: RegisterState = {
   loading: false,
   storing: false,
   keysSaved: false,
+  saveFailed: false,
   savePassword: '',
   showRawKeys: false,
   loadingEntry: false,
@@ -56,6 +59,7 @@ export const useRegisterStore = create<RegisterState & RegisterActions>()((set) 
   setKeys: (spending, viewing) => set({ spending, viewing, step: 'register' }),
   setStoring: (storing) => set({ storing }),
   setKeysSaved: (saved) => set({ keysSaved: saved }),
+  setSaveFailed: (failed) => set({ saveFailed: failed }),
   setLoading: (loading) => set({ loading }),
   setShowRawKeys: (show) => set({ showRawKeys: show }),
   setLoadingEntry: (loading) => set({ loadingEntry: loading }),

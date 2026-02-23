@@ -135,7 +135,7 @@ export function ScanFlow() {
 
   return (
     <>
-      {isConnected && hasKeys && !keysLoaded && (
+      {isConnected && hasKeys && (
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-phosphor-muted rounded-sm flex items-center justify-center flex-shrink-0">
@@ -150,7 +150,7 @@ export function ScanFlow() {
               </p>
             </div>
           </div>
-          {walletType === 'polkadotjs' && (
+          {!keysLoaded && walletType === 'polkadotjs' && (
             <Input
               label="Encryption Password"
               type="password"
@@ -159,8 +159,17 @@ export function ScanFlow() {
               onChange={(e) => setUnlockPassword(e.target.value)}
             />
           )}
-          <Button variant="outline" onClick={handleUnlock} loading={unlocking} className="w-full">
-            {walletType === 'metamask' ? 'Sign & Unlock Keys' : 'Unlock Keys'}
+          <Button variant="outline" onClick={keysLoaded ? undefined : handleUnlock} loading={unlocking} disabled={keysLoaded} className={`w-full ${keysLoaded ? '!text-phosphor !border-phosphor !opacity-100' : ''}`}>
+            {keysLoaded ? (
+              <>
+                <svg className="w-4 h-4 mr-2 text-phosphor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Keys Unlocked
+              </>
+            ) : (
+              walletType === 'metamask' ? 'Sign & Unlock Keys' : 'Unlock Keys'
+            )}
           </Button>
         </Card>
       )}
