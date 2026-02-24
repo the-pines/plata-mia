@@ -326,12 +326,6 @@ export default function SendPage() {
                     <span className="text-xs uppercase tracking-wider text-secondary">Hint</span>
                     <span className="text-primary">{hint}</span>
                   </div>
-                  {recipient.nickname && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs uppercase tracking-wider text-secondary">Nickname</span>
-                      <span className="text-primary">{recipient.nickname}</span>
-                    </div>
-                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase tracking-wider text-secondary">Source</span>
                     <span className="text-primary">{sourceChain.name}</span>
@@ -357,10 +351,13 @@ export default function SendPage() {
               <Card className="space-y-6">
                 <Input
                   label={`Amount (${sourceChain.tokenSymbol})`}
-                  type="number"
+                  inputMode="decimal"
                   placeholder="0.00"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (v === '' || /^\d*\.?\d*$/.test(v)) setAmount(v)
+                  }}
                 />
 
                 {!isCrossChain && sourceChain.type === 'evm' && (

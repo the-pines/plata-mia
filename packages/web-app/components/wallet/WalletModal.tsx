@@ -90,8 +90,7 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting }: WalletM
         <div className="w-12 h-0.5 bg-phosphor/30 mx-auto mt-3 mb-4" />
 
         <div className="px-6 pb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-sm uppercase tracking-wider text-secondary">Connect Wallet</h2>
+          <div className="flex justify-end mb-6">
             <button
               onClick={onClose}
               className="p-1 hover:bg-surface-hover rounded-sm transition-colors"

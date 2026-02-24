@@ -18,11 +18,15 @@ build/
 target/
 .next/
 out/
+.vitepress/cache/
 
 # Environment files
 .env
 .env.local
 .env.*.local
+
+# Claude Code
+.claude/
 
 # IDE
 .idea/
