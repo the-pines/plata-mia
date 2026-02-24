@@ -334,12 +334,6 @@ export default function SendPage() {
                     <span className="text-xs uppercase tracking-wider text-secondary">Destination</span>
                     <span className="text-primary">{destChain.name}</span>
                   </div>
-                  {isCrossChain && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs uppercase tracking-wider text-secondary">Transfer Type</span>
-                      <span className="text-accent-cyan font-medium">Cross-chain (Hyperbridge)</span>
-                    </div>
-                  )}
                 </div>
 
                 <KeyDisplay
@@ -360,20 +354,10 @@ export default function SendPage() {
                   }}
                 />
 
-                {!isCrossChain && sourceChain.type === 'evm' && (
-                  <div className="p-4 bg-phosphor-muted rounded-sm border border-phosphor/20">
-                    <p className="text-xs text-primary">
-                      <span className="font-medium">Note:</span> This will send a native token
-                      transfer to the derived stealth address via your connected wallet.
-                    </p>
-                  </div>
-                )}
-
                 {isCrossChain && (
                   <div className="p-4 bg-accent-cyan-muted rounded-sm border border-accent-cyan/20">
                     <p className="text-xs text-accent-cyan">
-                      <span className="font-medium">Cross-chain transfer:</span> This will use
-                      Hyperbridge to securely bridge your tokens. Transfer may take a few
+                      This will use Hyperbridge to securely bridge your tokens. Transfer may take a few
                       minutes.
                     </p>
                   </div>
