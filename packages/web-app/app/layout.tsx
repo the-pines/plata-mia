@@ -5,10 +5,40 @@ import { Providers } from '@/providers/Providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'PLATA_MIA',
-  description: 'Privacy-preserving payments on Polkadot',
+  title: 'PLATA_MIA — Private Stealth Payments',
+  description:
+    'Send and receive tokens privately across EVM chains. Stealth addresses, Hyperbridge cross-chain transfers, and xx-network anonymous announcements.',
   icons: {
     icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💸</text></svg>',
+  },
+  metadataBase: new URL('https://plata-mia.vercel.app'),
+  openGraph: {
+    title: 'PLATA_MIA — Private Stealth Payments',
+    description:
+      'Send and receive tokens privately across EVM chains. Stealth addresses, Hyperbridge cross-chain transfers, and xx-network anonymous announcements.',
+    siteName: 'PLATA_MIA',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PLATA_MIA — Private Stealth Payments',
+    description:
+      'Send and receive tokens privately across EVM chains. Stealth addresses, Hyperbridge cross-chain transfers, and xx-network anonymous announcements.',
+  },
+  keywords: [
+    'stealth addresses',
+    'privacy',
+    'crypto payments',
+    'EVM',
+    'cross-chain',
+    'Hyperbridge',
+    'xx-network',
+    'Polkadot',
+  ],
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 
