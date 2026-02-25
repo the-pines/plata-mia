@@ -1,0 +1,128 @@
+import type { ChainConfig } from './types'
+
+const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? ''
+
+export const ALL_CHAINS: ChainConfig[] = [
+  {
+    id: 'ethereum',
+    name: 'Ethereum',
+    type: 'evm',
+    chainId: 1,
+    rpcUrl: ALCHEMY_KEY
+      ? `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`
+      : 'https://eth.llamarpc.com',
+    explorerUrl: 'https://etherscan.io',
+    isTestnet: false,
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    gateway: {
+      address: '0xFd413e3AFe560182C4471F4d143A96d3e259B6dE',
+      hostAddress: '0x0000000000000000000000000000000000000000',
+      feeTokenAddress: '0x0000000000000000000000000000000000000000',
+      stateMachineId: 'EVM-1',
+      consensusStateId: 'ETH0',
+    },
+  },
+  {
+    id: 'polkadot-hub',
+    name: 'Polkadot Hub',
+    type: 'evm',
+    chainId: 420420419,
+    rpcUrl: 'https://eth-rpc.polkadot.io',
+    explorerUrl: 'https://blockscout.polkadot.io',
+    isTestnet: false,
+    nativeCurrency: { name: 'Polkadot', symbol: 'DOT', decimals: 18 },
+  },
+  {
+    id: 'sepolia',
+    name: 'Sepolia',
+    type: 'evm',
+    chainId: 11155111,
+    rpcUrl: ALCHEMY_KEY
+      ? `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`
+      : 'https://rpc.sepolia.org',
+    explorerUrl: 'https://sepolia.etherscan.io',
+    isTestnet: true,
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    gateway: {
+      address: '0xFcDa26cA021d5535C3059547390E6cCd8De7acA6',
+      hostAddress: '0x2EdB74C269948b60ec1000040E104cef0eABaae8',
+      feeTokenAddress: '0xa801da100bf16d07f668f4a49e1f71fc54d05177',
+      stateMachineId: 'EVM-11155111',
+      consensusStateId: 'ETH0',
+    },
+  },
+  {
+    id: 'arbitrum-sepolia',
+    name: 'Arbitrum Sepolia',
+    type: 'evm',
+    chainId: 421614,
+    rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
+    explorerUrl: 'https://sepolia.arbiscan.io',
+    isTestnet: true,
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    gateway: {
+      address: '0xFcDa26cA021d5535C3059547390E6cCd8De7acA6',
+      hostAddress: '0x3435bD7e5895356535459D6087D1eB982DAd90e7',
+      feeTokenAddress: '0xA801da100bF16D07F668F4A49E1f71fc54D05177',
+      stateMachineId: 'EVM-421614',
+      consensusStateId: 'ARB0',
+    },
+  },
+  {
+    id: 'optimism-sepolia',
+    name: 'Optimism Sepolia',
+    type: 'evm',
+    chainId: 11155420,
+    rpcUrl: 'https://sepolia.optimism.io',
+    explorerUrl: 'https://sepolia-optimism.etherscan.io',
+    isTestnet: true,
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    gateway: {
+      address: '0xFcDa26cA021d5535C3059547390E6cCd8De7acA6',
+      hostAddress: '0x6d51b678836d8060d980605d2999eF211809f3C2',
+      feeTokenAddress: '0xA801da100bF16D07F668F4A49E1f71fc54D05177',
+      stateMachineId: 'EVM-11155420',
+      consensusStateId: 'OPT0',
+    },
+  },
+  {
+    id: 'bsc-testnet',
+    name: 'BSC Testnet',
+    type: 'evm',
+    chainId: 97,
+    rpcUrl: 'https://data-seed-prebsc-1-s1.bnbchain.org:8545',
+    explorerUrl: 'https://testnet.bscscan.com',
+    isTestnet: true,
+    nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+    gateway: {
+      address: '0xFcDa26cA021d5535C3059547390E6cCd8De7acA6',
+      hostAddress: '0x8Aa0Dea6D675d785A882967Bf38183f6117C09b7',
+      feeTokenAddress: '0xA801da100bF16D07F668F4A49E1f71fc54D05177',
+      stateMachineId: 'EVM-97',
+      consensusStateId: 'BSC0',
+    },
+  },
+  {
+    id: 'polkadot-hub-testnet',
+    name: 'Polkadot Hub TestNet',
+    type: 'evm',
+    chainId: 420420417,
+    rpcUrl: 'https://eth-rpc-testnet.polkadot.io',
+    wsUrl: 'wss://testnet-rpc.polkadot.io',
+    explorerUrl: 'https://blockscout-testnet.polkadot.io',
+    isTestnet: true,
+    nativeCurrency: { name: 'Paseo', symbol: 'PAS', decimals: 18 },
+    gateway: {
+      address: '0x1c1e5be83df4a54c7a2230c337e4a3e8b7354b1c',
+      hostAddress: '0xbb26e04a71e7c12093e82b83ba310163eac186fa',
+      feeTokenAddress: '0x0dc440cf87830f0af564eb8b62b454b7e0c68a4b',
+      stateMachineId: 'EVM-420420417',
+      consensusStateId: 'PAS0',
+    },
+    registryAddress: '0x47568470D89CD2Ea20553ffB08bD630BC95FE4bB',
+  },
+]
+
+export function getChain(id: string): ChainConfig | undefined {
+  return ALL_CHAINS.find((c) => c.id === id)
+}

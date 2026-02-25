@@ -10,8 +10,13 @@ import {
   type PublicClient,
   type WalletClient,
 } from 'viem'
-import { REGISTRY_ABI, REGISTRY_CONTRACT_ADDRESS, polkadotHubTestnet } from '@/lib/contracts'
-import { ensureMetaMaskChain } from '@/lib/chains'
+import {
+  REGISTRY_ABI,
+  getRegistryAddress,
+  getRegistryChain,
+  toViemChain,
+  ensureMetaMaskChain,
+} from '@/lib/config'
 import type { ApiPromise } from '@polkadot/api'
 import type { Signer } from '@polkadot/api/types'
 
@@ -42,35 +47,20 @@ function toBytes32(value: string): `0x${string}` {
   return `0x${hex.padStart(64, '0')}` as `0x${string}`
 }
 
-// Create a public client for read operations
 function getPublicClient(): PublicClient {
   return createPublicClient({
-    chain: polkadotHubTestnet,
+    chain: toViemChain(getRegistryChain()),
     transport: http(),
   })
 }
 
-// Create a wallet client for MetaMask
 function getWalletClient(): WalletClient {
   if (typeof window === 'undefined' || !window.ethereum) {
     throw new Error('MetaMask not available')
   }
   return createWalletClient({
-    chain: polkadotHubTestnet,
+    chain: toViemChain(getRegistryChain()),
     transport: custom(window.ethereum),
-  })
-}
-
-async function ensureChain(): Promise<void> {
-  await ensureMetaMaskChain({
-    id: 'polkadot-hub-testnet',
-    name: polkadotHubTestnet.name,
-    type: 'evm',
-    chainId: polkadotHubTestnet.id,
-    rpcUrl: polkadotHubTestnet.rpcUrls.default.http[0],
-    tokenSymbol: polkadotHubTestnet.nativeCurrency.symbol,
-    tokenDecimals: polkadotHubTestnet.nativeCurrency.decimals,
-    isTestnet: true,
   })
 }
 
@@ -83,13 +73,14 @@ export async function registerWithMetaMask(
   nickname: string,
   account: `0x${string}`
 ): Promise<{ txHash: string }> {
-  await ensureChain()
+  await ensureMetaMaskChain(getRegistryChain())
   const client = getWalletClient()
   const identifier = hashHint(hint)
+  const registryAddress = getRegistryAddress()
 
   const txHash = await client.writeContract({
-    chain: polkadotHubTestnet,
-    address: REGISTRY_CONTRACT_ADDRESS,
+    chain: toViemChain(getRegistryChain()),
+    address: registryAddress,
     abi: REGISTRY_ABI,
     functionName: 'register',
     args: [
@@ -119,6 +110,7 @@ export async function registerWithPolkadotJs(
   const { encodeFunctionData } = await import('viem')
 
   const identifier = hashHint(hint)
+  const registryAddress = getRegistryAddress()
   const callData = encodeFunctionData({
     abi: REGISTRY_ABI,
     functionName: 'register',
@@ -134,7 +126,7 @@ export async function registerWithPolkadotJs(
   const gasLimit = 4_294_967_295n
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tx = (api.tx as any).revive.call(
-    { Id: REGISTRY_CONTRACT_ADDRESS },
+    { Id: registryAddress },
     0n,
     gasLimit,
     null,
@@ -172,9 +164,10 @@ export async function registerWithPolkadotJs(
 export async function lookup(hint: string): Promise<StealthMetaAddress | null> {
   const client = getPublicClient()
   const identifier = hashHint(hint)
+  const registryAddress = getRegistryAddress()
 
   const result = await client.readContract({
-    address: REGISTRY_CONTRACT_ADDRESS,
+    address: registryAddress,
     abi: REGISTRY_ABI,
     functionName: 'lookup',
     args: [identifier],
@@ -202,9 +195,10 @@ export async function lookup(hint: string): Promise<StealthMetaAddress | null> {
 export async function getOwner(hint: string): Promise<string> {
   const client = getPublicClient()
   const identifier = hashHint(hint)
+  const registryAddress = getRegistryAddress()
 
   const owner = await client.readContract({
-    address: REGISTRY_CONTRACT_ADDRESS,
+    address: registryAddress,
     abi: REGISTRY_ABI,
     functionName: 'getOwner',
     args: [identifier],

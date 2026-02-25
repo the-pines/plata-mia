@@ -8,7 +8,7 @@ import {
   pubkeyToBytes32,
 } from '@plata-mia/stealth-core'
 import { useWallet, truncateAddress } from '@/hooks/useWallet'
-import { polkadotHubTestnet } from '@/lib/contracts'
+import { getRegistryChain, toViemChain } from '@/lib/config'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 import { storeKeys, hasStoredKeys, loadKeys } from '@/lib/keyStorage'
 import { useRegisterStore } from '@/stores/registerStore'
@@ -150,7 +150,7 @@ export function RegisterFlow({ onComplete }: RegisterFlowProps) {
           hint,
           spendingKey: spendBytes32,
           viewingKey: viewBytes32,
-          preferredChain: polkadotHubTestnet.id,
+          preferredChain: toViemChain(getRegistryChain()).id,
           nickname: hint,
           account: account.address as `0x${string}`,
         })
@@ -159,7 +159,7 @@ export function RegisterFlow({ onComplete }: RegisterFlowProps) {
           hint,
           spendingKey: spendBytes32,
           viewingKey: viewBytes32,
-          preferredChain: polkadotHubTestnet.id,
+          preferredChain: toViemChain(getRegistryChain()).id,
           nickname: hint,
           api: api as ApiPromise,
           signerAddress: account.address,

@@ -7,6 +7,7 @@ import {
   Input,
   KeyDisplay,
   ChainSelector,
+  TokenSelector,
   TransferStatus,
   TabBar,
 } from '@/components/ui'
@@ -18,12 +19,16 @@ import {
   hexToBytes,
 } from '@plata-mia/stealth-core'
 import { useWallet } from '@/hooks/useWallet'
+import { parseUnits } from 'viem'
 import {
-  getChainById,
-  isCrossChainTransfer,
-  requiresHyperbridge,
+  getChain,
+  getToken,
+  isNativeToken,
+  getTokenAddress,
+  isCrossChain as checkCrossChain,
   ensureMetaMaskChain,
-} from '@/lib/chains'
+  toViemChain,
+} from '@/lib/config'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 import { useSendStore } from '@/stores/sendStore'
 import { useHistoryStore, getPendingCount } from '@/stores/historyStore'
@@ -37,6 +42,7 @@ export default function SendPage() {
   const { isConnected, account } = useWallet()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'send' | 'history'>('send')
+  const [tokenAvailable, setTokenAvailable] = useState(true)
 
   const {
     step,
@@ -46,6 +52,7 @@ export default function SendPage() {
     amount,
     sourceChainId,
     destChainId,
+    selectedTokenSymbol,
     txHash,
     transferProgress,
     loading,
@@ -53,6 +60,7 @@ export default function SendPage() {
     setAmount,
     setSourceChainId,
     setDestChainId,
+    setSelectedTokenSymbol,
     setLookupResult,
     startTransfer,
     updateProgress,
@@ -64,10 +72,10 @@ export default function SendPage() {
 
   const { entries, loadForWallet, addEntry } = useHistoryStore()
 
-  const sourceChain = getChainById(sourceChainId) || null
-  const destChain = getChainById(destChainId) || null
-  const isCrossChain = sourceChain && destChain && isCrossChainTransfer(sourceChain, destChain)
-  const usesHyperbridge = sourceChain && destChain && requiresHyperbridge(sourceChain, destChain)
+  const sourceChain = getChain(sourceChainId) ?? null
+  const destChain = getChain(destChainId) ?? null
+  const selectedToken = getToken(selectedTokenSymbol) ?? null
+  const isCrossChain = sourceChain && destChain && checkCrossChain(sourceChain, destChain)
   const pendingCount = getPendingCount(entries)
 
   useEffect(() => {
@@ -76,7 +84,7 @@ export default function SendPage() {
     }
   }, [account?.address, loadForWallet])
 
-  const saveHistoryEntry = (txHash: string, requestId?: string, commitmentHash?: string) => {
+  const saveHistoryEntry = (hash: string, requestId?: string, commitmentHash?: string) => {
     if (!sourceChain || !destChain || !derivedAddress) return
 
     const entry: HistoryEntry = {
@@ -85,12 +93,12 @@ export default function SendPage() {
       hint,
       recipientAddress: derivedAddress.address,
       amount,
-      tokenSymbol: sourceChain.tokenSymbol,
+      tokenSymbol: selectedTokenSymbol,
       sourceChainId: sourceChain.id,
       destChainId: destChain.id,
       transferType: isCrossChain ? 'cross-chain' : 'same-chain',
       status: isCrossChain ? 'source_finalized' : 'completed',
-      txHash,
+      txHash: hash,
       requestId,
       commitmentHash,
     }
@@ -139,7 +147,7 @@ export default function SendPage() {
   }
 
   const handleSend = async () => {
-    if (!derivedAddress || !amount || !sourceChain || !destChain) {
+    if (!derivedAddress || !amount || !sourceChain || !destChain || !selectedToken) {
       showError('Please fill in all fields')
       return
     }
@@ -154,9 +162,9 @@ export default function SendPage() {
 
     try {
       await ensureMetaMaskChain(sourceChain)
-      const amountBigInt = BigInt(Math.floor(amountNum * 10 ** sourceChain.tokenDecimals))
+      const amountBigInt = parseUnits(amount, selectedToken.decimals)
 
-      if (isCrossChain && usesHyperbridge) {
+      if (isCrossChain && sourceChain.gateway && destChain.gateway) {
         const gateway = getTokenGatewayService()
 
         const result = await gateway.teleport(
@@ -165,6 +173,7 @@ export default function SendPage() {
             destChain,
             recipient: derivedAddress.address,
             amount: amountBigInt,
+            token: selectedToken,
           },
           (progress) => {
             updateProgress(progress)
@@ -181,6 +190,7 @@ export default function SendPage() {
         saveHistoryEntry(result.txHash, result.requestId, result.commitmentHash)
         completeTransfer(result.txHash)
       } else {
+        // Same-chain transfer
         updateProgress({ status: 'signing' })
 
         const { createPublicClient, createWalletClient, custom, http } = await import('viem')
@@ -200,21 +210,46 @@ export default function SendPage() {
         const [walletAccount] = await walletClient.requestAddresses()
         if (!walletAccount) throw new Error('No account connected')
 
-        const hash = await walletClient.sendTransaction({
-          account: walletAccount,
-          to: derivedAddress.address,
-          value: amountBigInt,
-          chain: {
-            id: sourceChain.chainId!,
-            name: sourceChain.name,
-            nativeCurrency: {
-              name: sourceChain.tokenSymbol,
-              symbol: sourceChain.tokenSymbol,
-              decimals: sourceChain.tokenDecimals,
+        const viemChain = toViemChain(sourceChain)
+        let hash: `0x${string}`
+
+        if (isNativeToken(sourceChainId, selectedToken.symbol)) {
+          // Native token transfer
+          hash = await walletClient.sendTransaction({
+            account: walletAccount,
+            to: derivedAddress.address,
+            value: amountBigInt,
+            chain: viemChain,
+          })
+        } else {
+          // ERC20 token transfer
+          const tokenAddress = getTokenAddress(sourceChainId, selectedToken.symbol)
+          if (!tokenAddress) {
+            throw new Error(`${selectedToken.symbol} not available on this chain`)
+          }
+
+          const ERC20_TRANSFER_ABI = [
+            {
+              name: 'transfer',
+              type: 'function',
+              inputs: [
+                { name: 'to', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+              stateMutability: 'nonpayable',
             },
-            rpcUrls: { default: { http: [sourceChain.rpcUrl] } },
-          },
-        })
+          ] as const
+
+          hash = await walletClient.writeContract({
+            account: walletAccount,
+            address: tokenAddress,
+            abi: ERC20_TRANSFER_ABI,
+            functionName: 'transfer',
+            args: [derivedAddress.address as `0x${string}`, amountBigInt],
+            chain: viemChain,
+          })
+        }
 
         updateProgress({ status: 'source_submitted', txHash: hash })
 
@@ -295,14 +330,6 @@ export default function SendPage() {
                 />
               </div>
 
-              {isCrossChain && (
-                <div className="p-3 bg-accent-cyan-muted border border-accent-cyan/20 rounded-sm">
-                  <p className="text-xs uppercase tracking-wider text-accent-cyan">
-                    Cross-chain transfer via Hyperbridge
-                  </p>
-                </div>
-              )}
-
               <Input
                 label="Recipient Hint"
                 placeholder="e.g., alice, bob.payments"
@@ -359,8 +386,16 @@ export default function SendPage() {
               </Card>
 
               <Card className="space-y-6">
+                <TokenSelector
+                  chainId={sourceChainId}
+                  destChainId={destChainId}
+                  value={selectedTokenSymbol}
+                  onChange={setSelectedTokenSymbol}
+                  onAvailabilityChange={setTokenAvailable}
+                />
+
                 <Input
-                  label={`Amount (${sourceChain.tokenSymbol})`}
+                  label={`Amount (${selectedTokenSymbol})`}
                   inputMode="decimal"
                   placeholder="0.00"
                   value={amount}
@@ -374,8 +409,8 @@ export default function SendPage() {
                   <Button variant="outline" onClick={reset}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSend} loading={loading} size="lg" className="flex-1">
-                    Send {amount ? `${amount} ${sourceChain.tokenSymbol}` : ''}
+                  <Button onClick={handleSend} loading={loading} disabled={!tokenAvailable} size="lg" className="flex-1">
+                    Send {amount ? `${amount} ${selectedTokenSymbol}` : ''}
                   </Button>
                 </div>
               </Card>

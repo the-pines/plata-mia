@@ -1,24 +1,5 @@
-// Registry contract ABI and chain config for Polkadot Hub TestNet
-
-import { defineChain } from 'viem'
-
-export const REGISTRY_CONTRACT_ADDRESS = '0x47568470D89CD2Ea20553ffB08bD630BC95FE4bB' as const
-
-export const polkadotHubTestnet = defineChain({
-  id: 420420417,
-  name: 'Polkadot Hub TestNet',
-  nativeCurrency: {
-    decimals: 10,
-    name: 'DOT',
-    symbol: 'DOT',
-  },
-  rpcUrls: {
-    default: {
-      http: ['https://eth-rpc-testnet.polkadot.io'],
-      webSocket: ['wss://testnet-rpc.polkadot.io'],
-    },
-  },
-})
+import type { ChainConfig } from './types'
+import { getActiveChains, NETWORK } from './network'
 
 export const REGISTRY_ABI = [
   {
@@ -75,3 +56,14 @@ export const REGISTRY_ABI = [
     stateMutability: 'nonpayable',
   },
 ] as const
+
+export function getRegistryChain(): ChainConfig {
+  const chain = getActiveChains().find((c) => c.registryAddress)
+  if (!chain) throw new Error(`No chain with registry address for network: ${NETWORK}`)
+  return chain
+}
+
+export function getRegistryAddress(): `0x${string}` {
+  const chain = getRegistryChain()
+  return chain.registryAddress!
+}

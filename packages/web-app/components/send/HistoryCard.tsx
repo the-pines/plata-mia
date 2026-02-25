@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { type HistoryEntry, TERMINAL_STATUSES } from '@/types/history'
-import { getChainById } from '@/lib/chains'
-import { getHyperbridgeExplorerLink } from '@/lib/constants'
+import { getChain, getHyperbridgeExplorerLink } from '@/lib/config'
 import { Card } from '@/components/ui'
 
 interface HistoryCardProps {
@@ -89,13 +88,12 @@ function BridgeProgress({ status }: { status: string }) {
 
 export function HistoryCard({ entry }: HistoryCardProps) {
   const [open, setOpen] = useState(false)
-  const sourceChain = getChainById(entry.sourceChainId)
-  const destChain = getChainById(entry.destChainId)
+  const sourceChain = getChain(entry.sourceChainId)
+  const destChain = getChain(entry.destChainId)
   const config = STATUS_CONFIG[entry.status]
   const isTerminal = TERMINAL_STATUSES.includes(entry.status)
   const isCrossChain = entry.transferType === 'cross-chain'
-  const isTestnet = sourceChain?.isTestnet || destChain?.isTestnet || false
-  const bridgeExplorerLink = getHyperbridgeExplorerLink(entry.commitmentHash, isTestnet)
+  const bridgeExplorerLink = getHyperbridgeExplorerLink(entry.commitmentHash)
   const isActive = !isTerminal && (entry.status === 'pending' || entry.status === 'relaying' || (isCrossChain && entry.status === 'source_finalized'))
 
   return (

@@ -1,4 +1,10 @@
-import { type ChainConfig, ensureMetaMaskChain } from '@/lib/chains'
+import {
+  type ChainConfig,
+  type TokenConfig,
+  isNativeToken,
+  ensureMetaMaskChain,
+  getHyperbridgeIndexerUrl,
+} from '@/lib/config'
 import { createQueryClient, queryPostRequest, type PostRequestWithStatus, type IndexerQueryClient } from '@hyperbridge/sdk'
 
 export type TransferStatus =
@@ -28,7 +34,7 @@ export interface TeleportParams {
   destChain: ChainConfig
   recipient: string
   amount: bigint
-  assetId?: string
+  token: TokenConfig
   timeout?: number
 }
 
@@ -67,6 +73,13 @@ const TOKEN_GATEWAY_ABI = [
     outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
   },
+  {
+    name: 'erc6160',
+    type: 'function',
+    inputs: [{ name: 'assetId', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+  },
 ] as const
 
 const WETH9_ABI = [
@@ -92,6 +105,13 @@ const ERC20_APPROVE_ABI = [
   },
 ] as const
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+export interface TokenAvailability {
+  available: boolean
+  reason?: string
+}
+
 export class TokenGatewayService {
   private queryClient: IndexerQueryClient
 
@@ -99,26 +119,89 @@ export class TokenGatewayService {
     this.queryClient = createQueryClient({ url: indexerUrl })
   }
 
+  async checkTokensAvailability(
+    sourceChain: ChainConfig,
+    destChain: ChainConfig,
+    tokens: TokenConfig[]
+  ): Promise<Record<string, TokenAvailability>> {
+    const result: Record<string, TokenAvailability> = {}
+
+    if (!sourceChain.gateway || !destChain.gateway) {
+      for (const token of tokens) {
+        result[token.symbol] = { available: false, reason: 'No bridge on this route' }
+      }
+      return result
+    }
+
+    const bridgeable = tokens.filter((t) => t.assetId)
+    for (const token of tokens) {
+      if (!token.assetId) {
+        result[token.symbol] = { available: false, reason: 'Not bridgeable' }
+      }
+    }
+
+    if (bridgeable.length === 0) return result
+
+    try {
+      const { createPublicClient, http, keccak256, toHex } = await import('viem')
+
+      const sourceClient = createPublicClient({ transport: http(sourceChain.rpcUrl) })
+      const destClient = createPublicClient({ transport: http(destChain.rpcUrl) })
+
+      const checks = bridgeable.map(async (token) => {
+        const assetIdHash = keccak256(toHex(token.assetId!))
+        try {
+          const [srcErc20, srcHft, dstErc20, dstHft] = await Promise.all([
+            sourceClient.readContract({ address: sourceChain.gateway!.address, abi: TOKEN_GATEWAY_ABI, functionName: 'erc20', args: [assetIdHash] }),
+            sourceClient.readContract({ address: sourceChain.gateway!.address, abi: TOKEN_GATEWAY_ABI, functionName: 'erc6160', args: [assetIdHash] }),
+            destClient.readContract({ address: destChain.gateway!.address, abi: TOKEN_GATEWAY_ABI, functionName: 'erc20', args: [assetIdHash] }),
+            destClient.readContract({ address: destChain.gateway!.address, abi: TOKEN_GATEWAY_ABI, functionName: 'erc6160', args: [assetIdHash] }),
+          ])
+
+          const srcRegistered = srcErc20 !== ZERO_ADDRESS || srcHft !== ZERO_ADDRESS
+          const dstRegistered = dstErc20 !== ZERO_ADDRESS || dstHft !== ZERO_ADDRESS
+
+          if (!srcRegistered) {
+            result[token.symbol] = { available: false, reason: `Not on ${sourceChain.name}` }
+          } else if (!dstRegistered) {
+            result[token.symbol] = { available: false, reason: `Not on ${destChain.name}` }
+          } else {
+            result[token.symbol] = { available: true }
+          }
+        } catch {
+          result[token.symbol] = { available: false, reason: 'Failed to check availability' }
+        }
+      })
+
+      await Promise.all(checks)
+    } catch {
+      for (const token of bridgeable) {
+        if (!result[token.symbol]) {
+          result[token.symbol] = { available: false, reason: 'Failed to check availability' }
+        }
+      }
+    }
+
+    return result
+  }
+
   async teleport(
     params: TeleportParams,
     onProgress?: (progress: TransferProgress) => void
   ): Promise<TeleportResult> {
-    const { sourceChain, destChain, recipient, amount, timeout = 3600 } = params
+    const { sourceChain } = params
 
-    // Validate chains have gateway addresses
-    if (sourceChain.type === 'evm' && !sourceChain.gatewayAddress) {
-      throw new Error(`Gateway address not configured for ${sourceChain.name}`)
+    if (sourceChain.type === 'evm' && !sourceChain.gateway) {
+      throw new Error(`Gateway not configured for ${sourceChain.name}`)
     }
 
     onProgress?.({ status: 'signing' })
 
     try {
-      // For EVM source chains, use viem
       if (sourceChain.type === 'evm') {
         return await this.teleportFromEvm(params, onProgress)
       }
 
-      // For Substrate source chains, use Polkadot.js
       if (sourceChain.type === 'substrate') {
         return await this.teleportFromSubstrate(params, onProgress)
       }
@@ -137,7 +220,7 @@ export class TokenGatewayService {
     params: TeleportParams,
     onProgress?: (progress: TransferProgress) => void
   ): Promise<TeleportResult> {
-    const { sourceChain, destChain, recipient, amount, timeout = 3600 } = params
+    const { sourceChain, destChain, recipient, amount, token, timeout = 3600 } = params
 
     await ensureMetaMaskChain(sourceChain)
 
@@ -148,13 +231,9 @@ export class TokenGatewayService {
     }
 
     const chain = {
-      id: sourceChain.chainId!,
+      id: sourceChain.chainId,
       name: sourceChain.name,
-      nativeCurrency: {
-        name: sourceChain.tokenSymbol,
-        symbol: sourceChain.tokenSymbol,
-        decimals: sourceChain.tokenDecimals,
-      },
+      nativeCurrency: sourceChain.nativeCurrency,
       rpcUrls: { default: { http: [sourceChain.rpcUrl] } },
     }
 
@@ -164,110 +243,143 @@ export class TokenGatewayService {
     const [account] = await walletClient.requestAddresses()
     if (!account) throw new Error('No account connected')
 
-    if (!sourceChain.feeTokenAddress) {
-      throw new Error(`Fee token address not configured for ${sourceChain.name}`)
+    const gateway = sourceChain.gateway!
+    if (!token.assetId) {
+      throw new Error(`${token.symbol} is not bridgeable`)
+    }
+    const assetId = keccak256(toHex(token.assetId))
+
+    if (isNativeToken(sourceChain.id, token.symbol)) {
+      // Native token: wrap → approve → teleport
+      const wethAddress = await publicClient.readContract({
+        address: gateway.address,
+        abi: TOKEN_GATEWAY_ABI,
+        functionName: 'erc20',
+        args: [assetId],
+      })
+
+      if (wethAddress === ZERO_ADDRESS) {
+        throw new Error(`${token.assetId} not registered on ${sourceChain.name} gateway`)
+      }
+
+      console.log(`[teleport] ${token.assetId} address:`, wethAddress)
+      console.log('[teleport] wrapping', amount.toString(), 'wei')
+
+      // Step 1: Wrap native → WETH
+      onProgress?.({ status: 'signing', detail: `Signing ${token.assetId} Wrap` })
+      const wrapHash = await walletClient.writeContract({
+        account,
+        address: wethAddress,
+        abi: WETH9_ABI,
+        functionName: 'deposit',
+        args: [],
+        value: amount,
+        chain,
+      })
+
+      console.log('[teleport] wrap tx:', wrapHash)
+      const wrapReceipt = await publicClient.waitForTransactionReceipt({
+        hash: wrapHash,
+        timeout: 120_000,
+      })
+      if (wrapReceipt.status === 'reverted') {
+        throw new Error(`${token.assetId} wrap reverted (${wrapHash})`)
+      }
+
+      // Step 2: Approve gateway to spend WETH
+      onProgress?.({ status: 'signing', detail: `Signing ${token.assetId} Approval` })
+      console.log(`[teleport] approving gateway to spend ${token.assetId}`)
+      const approveHash = await walletClient.writeContract({
+        account,
+        address: wethAddress,
+        abi: ERC20_APPROVE_ABI,
+        functionName: 'approve',
+        args: [gateway.address, amount],
+        chain,
+      })
+
+      console.log(`[teleport] ${token.assetId} approve tx:`, approveHash)
+      const approveReceipt = await publicClient.waitForTransactionReceipt({
+        hash: approveHash,
+        timeout: 120_000,
+      })
+      if (approveReceipt.status === 'reverted') {
+        throw new Error(`${token.assetId} approve reverted (${approveHash})`)
+      }
+    } else {
+      // ERC20 token: resolve address from gateway, then approve → teleport
+      const erc20Address = await publicClient.readContract({
+        address: gateway.address,
+        abi: TOKEN_GATEWAY_ABI,
+        functionName: 'erc20',
+        args: [assetId],
+      })
+
+      if (erc20Address === ZERO_ADDRESS) {
+        throw new Error(`${token.symbol} not registered on ${sourceChain.name} gateway`)
+      }
+
+      onProgress?.({ status: 'signing', detail: `Signing ${token.symbol} Approval` })
+      console.log(`[teleport] ${token.symbol} address:`, erc20Address)
+      console.log(`[teleport] approving gateway to spend ${token.symbol}`)
+      const approveHash = await walletClient.writeContract({
+        account,
+        address: erc20Address,
+        abi: ERC20_APPROVE_ABI,
+        functionName: 'approve',
+        args: [gateway.address, amount],
+        chain,
+      })
+
+      console.log(`[teleport] ${token.symbol} approve tx:`, approveHash)
+      const approveReceipt = await publicClient.waitForTransactionReceipt({
+        hash: approveHash,
+        timeout: 120_000,
+      })
+      if (approveReceipt.status === 'reverted') {
+        throw new Error(`${token.symbol} approve reverted (${approveHash})`)
+      }
     }
 
-    const gatewayAddress = sourceChain.gatewayAddress as `0x${string}`
-    const feeTokenAddress = sourceChain.feeTokenAddress as `0x${string}`
-    const assetId = keccak256(toHex('WETH'))
-
-    // Look up the WETH address registered on the gateway
-    const wethAddress = await publicClient.readContract({
-      address: gatewayAddress,
-      abi: TOKEN_GATEWAY_ABI,
-      functionName: 'erc20',
-      args: [assetId],
-    })
-
-    if (wethAddress === '0x0000000000000000000000000000000000000000') {
-      throw new Error('WETH not registered on the TokenGateway')
-    }
-
-    console.log('[teleport] WETH address:', wethAddress)
-    console.log('[teleport] wrapping', amount.toString(), 'wei to WETH')
-
-    // Step 1: Wrap ETH → WETH
-    onProgress?.({ status: 'signing', detail: 'Signing WETH Wrap' })
-    const wrapHash = await walletClient.writeContract({
-      account,
-      address: wethAddress,
-      abi: WETH9_ABI,
-      functionName: 'deposit',
-      args: [],
-      value: amount,
-      chain,
-    })
-
-    console.log('[teleport] wrap tx:', wrapHash)
-    const wrapReceipt = await publicClient.waitForTransactionReceipt({
-      hash: wrapHash,
-      timeout: 120_000,
-    })
-    if (wrapReceipt.status === 'reverted') {
-      throw new Error(`WETH wrap reverted (${wrapHash})`)
-    }
-
-    // Step 2: Approve gateway to spend WETH
-    onProgress?.({ status: 'signing', detail: 'Signing WETH Approval' })
-    console.log('[teleport] approving gateway to spend WETH')
-    const approveWethHash = await walletClient.writeContract({
-      account,
-      address: wethAddress,
-      abi: ERC20_APPROVE_ABI,
-      functionName: 'approve',
-      args: [gatewayAddress, amount],
-      chain,
-    })
-
-    console.log('[teleport] WETH approve tx:', approveWethHash)
-    const approveWethReceipt = await publicClient.waitForTransactionReceipt({
-      hash: approveWethHash,
-      timeout: 120_000,
-    })
-    if (approveWethReceipt.status === 'reverted') {
-      throw new Error(`WETH approve reverted (${approveWethHash})`)
-    }
-
-    // Step 3: Approve gateway to spend fee token (dispatch fee)
+    // Approve gateway to spend fee token (Hyperbridge dispatch fee)
     onProgress?.({ status: 'signing', detail: 'Signing Fee Approval' })
-    const feeApproveAmount = BigInt(10e18)
-    console.log('[teleport] approving gateway to spend fee token:', feeTokenAddress)
-    const approveUsdhHash = await walletClient.writeContract({
+    const feeApproveAmount = 10n * 10n ** 18n // 10 fee tokens — headroom over the 1-token relayer fee
+    console.log('[teleport] approving gateway to spend fee token:', gateway.feeTokenAddress)
+    const approveFeeHash = await walletClient.writeContract({
       account,
-      address: feeTokenAddress,
+      address: gateway.feeTokenAddress,
       abi: ERC20_APPROVE_ABI,
       functionName: 'approve',
-      args: [gatewayAddress, feeApproveAmount],
+      args: [gateway.address, feeApproveAmount],
       chain,
     })
 
-    console.log('[teleport] fee token approve tx:', approveUsdhHash)
-    const approveUsdhReceipt = await publicClient.waitForTransactionReceipt({
-      hash: approveUsdhHash,
+    console.log('[teleport] fee token approve tx:', approveFeeHash)
+    const approveFeeReceipt = await publicClient.waitForTransactionReceipt({
+      hash: approveFeeHash,
       timeout: 120_000,
     })
-    if (approveUsdhReceipt.status === 'reverted') {
-      throw new Error(`Fee token approve reverted (${approveUsdhHash})`)
+    if (approveFeeReceipt.status === 'reverted') {
+      throw new Error(`Fee token approve reverted (${approveFeeHash})`)
     }
 
-    // Step 4: Teleport
+    // Teleport
     onProgress?.({ status: 'signing', detail: 'Signing Teleport' })
-    const destStateMachineId = this.encodeStateMachineId(destChain)
+    const destStateMachineId = this.encodeStateMachineIdHex(destChain.gateway!.stateMachineId)
     const teleportParams = {
       amount,
-      relayerFee: BigInt(1e18),
+      relayerFee: 10n ** 18n, // 1 fee token
       assetId,
       redeem: false,
       to: this.encodeRecipientToBytes32(recipient),
       dest: destStateMachineId,
       timeout: BigInt(timeout),
-      nativeCost: BigInt(0),
+      nativeCost: 0n,
       data: '0x' as `0x${string}`,
     }
 
     console.log('[teleport] submitting teleport:', {
-      gateway: gatewayAddress,
+      gateway: gateway.address,
       dest: destStateMachineId,
       amount: amount.toString(),
       assetId,
@@ -275,11 +387,11 @@ export class TokenGatewayService {
 
     const txHash = await walletClient.writeContract({
       account,
-      address: gatewayAddress,
+      address: gateway.address,
       abi: TOKEN_GATEWAY_ABI,
       functionName: 'teleport',
       args: [teleportParams],
-      value: BigInt(0),
+      value: 0n,
       gas: 10_000_000n,
       chain,
     })
@@ -304,7 +416,6 @@ export class TokenGatewayService {
       sourceBlockNumber: Number(receipt.blockNumber),
     })
 
-    // Extract commitment hash from the PostRequestEvent in the receipt
     const sourceBlockNumber = Number(receipt.blockNumber)
     let commitmentHash: string | undefined
     try {
@@ -330,15 +441,12 @@ export class TokenGatewayService {
   ): Promise<TeleportResult> {
     const { sourceChain, destChain, recipient, amount, timeout = 3600 } = params
 
-    // Dynamic import Polkadot.js
     const { ApiPromise, WsProvider } = await import('@polkadot/api')
     const { web3Enable, web3Accounts, web3FromAddress } = await import('@polkadot/extension-dapp')
 
-    // Connect to chain
     const wsProvider = new WsProvider(sourceChain.rpcUrl)
     const api = await ApiPromise.create({ provider: wsProvider })
 
-    // Enable extension and get accounts
     await web3Enable('Plata Mia')
     const accounts = await web3Accounts()
 
@@ -349,31 +457,27 @@ export class TokenGatewayService {
     const account = accounts[0]
     const injector = await web3FromAddress(account.address)
 
-    // Encode destination
     const destChainType = destChain.type === 'evm' ? 'Ethereum' : 'Substrate'
     const destChainId = destChain.type === 'evm' ? destChain.chainId : 0
 
     onProgress?.({ status: 'signing' })
 
-    // Check if tokenGateway pallet exists
     if (!api.tx.tokenGateway) {
       throw new Error('Token Gateway pallet not available on this chain')
     }
 
-    // Create teleport extrinsic
     const tx = api.tx.tokenGateway.teleport(
-      null, // assetId - null for native token
+      null,
       { [destChainType]: destChainId },
-      destChain.gatewayAddress || '0x',
+      destChain.gateway?.address || '0x',
       recipient,
       amount.toString(),
       timeout,
-      0, // relayerFee
+      0,
     )
 
     onProgress?.({ status: 'source_submitted' })
 
-    // Sign and submit
     const txHash = await new Promise<string>((resolve, reject) => {
       tx.signAndSend(
         account.address,
@@ -453,12 +557,8 @@ export class TokenGatewayService {
     }
   }
 
-  private encodeStateMachineId(chain: ChainConfig): `0x${string}` {
-    // Hyperbridge state machine IDs are UTF-8 strings: "EVM-{chainId}", "POLKADOT-{paraId}"
-    const id = chain.type === 'evm'
-      ? `EVM-${chain.chainId || 1}`
-      : `POLKADOT-${chain.ss58Prefix || 0}`
-    const bytes = Array.from(new TextEncoder().encode(id))
+  private encodeStateMachineIdHex(stateMachineId: string): `0x${string}` {
+    const bytes = Array.from(new TextEncoder().encode(stateMachineId))
     return `0x${bytes.map(b => b.toString(16).padStart(2, '0')).join('')}` as `0x${string}`
   }
 
@@ -468,14 +568,11 @@ export class TokenGatewayService {
   }
 }
 
-// Singleton instance
 let gatewayService: TokenGatewayService | null = null
 
-export function getTokenGatewayService(indexerUrl?: string): TokenGatewayService {
+export function getTokenGatewayService(): TokenGatewayService {
   if (!gatewayService) {
-    const url = indexerUrl || process.env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER || 'https://gargantua.indexer.polytope.technology'
-    gatewayService = new TokenGatewayService(url)
+    gatewayService = new TokenGatewayService(getHyperbridgeIndexerUrl())
   }
   return gatewayService
 }
-
