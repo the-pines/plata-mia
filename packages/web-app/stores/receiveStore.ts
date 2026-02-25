@@ -6,6 +6,7 @@ interface ReceiveState {
   spendingPubkey: string
   hasKeys: boolean
   keysLoaded: boolean
+  showKeys: boolean
   unlocking: boolean
   unlockPassword: string
   loading: boolean
@@ -25,6 +26,7 @@ interface ReceiveActions {
   setSpendingPubkey: (pubkey: string) => void
   setUnlockPassword: (password: string) => void
   setHasKeys: (hasKeys: boolean) => void
+  setShowKeys: (showKeys: boolean) => void
   loadKeysFromStorage: (keys: {
     viewingSecret: string
     spendingSecret: string
@@ -43,6 +45,7 @@ const initialState: ReceiveState = {
   spendingPubkey: '',
   hasKeys: false,
   keysLoaded: false,
+  showKeys: true,
   unlocking: false,
   unlockPassword: '',
   loading: false,
@@ -58,6 +61,7 @@ export const useReceiveStore = create<ReceiveState & ReceiveActions>()((set) => 
   setSpendingPubkey: (pubkey) => set({ spendingPubkey: pubkey }),
   setUnlockPassword: (password) => set({ unlockPassword: password }),
   setHasKeys: (hasKeys) => set({ hasKeys }),
+  setShowKeys: (showKeys) => set({ showKeys }),
   loadKeysFromStorage: (keys) =>
     set({
       viewingSecret: keys.viewingSecret,

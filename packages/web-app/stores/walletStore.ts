@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { polkadotHubTestnet } from '@/lib/contracts'
+import { getRegistryChain, toViemChain } from '@/lib/config'
 import { isValidEvmAddress } from '@plata-mia/stealth-core'
 
 export type WalletType = 'metamask' | 'polkadotjs' | null
@@ -146,10 +146,12 @@ export const useWalletStore = create<WalletStore>()(
           const selectedAccount = accounts[0]
           const injector = await web3FromAddress(selectedAccount.address)
 
-          const { ApiPromise, WsProvider } = await import('@polkadot/api')
-          const wsUrl = polkadotHubTestnet.rpcUrls.default.webSocket?.[0]
+          const registryChain = getRegistryChain()
+          const viemChain = toViemChain(registryChain)
+          const wsUrl = viemChain.rpcUrls.default.webSocket?.[0]
           if (!wsUrl) throw new Error('WebSocket URL not configured')
 
+          const { ApiPromise, WsProvider } = await import('@polkadot/api')
           const provider = new WsProvider(wsUrl)
           const apiInstance = await ApiPromise.create({ provider })
 

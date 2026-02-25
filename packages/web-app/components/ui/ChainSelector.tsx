@@ -1,12 +1,12 @@
 'use client'
 
-import { ChainConfig, SUPPORTED_CHAINS } from '@/lib/chains'
+import { type ChainConfig, getActiveChains } from '@/lib/config'
 
 interface ChainSelectorProps {
   label?: string
   value: string
   onChange: (chainId: string) => void
-  filter?: (chain: ChainConfig) => boolean
+  chains?: ChainConfig[]
   disabled?: boolean
   error?: string
 }
@@ -15,13 +15,12 @@ export function ChainSelector({
   label,
   value,
   onChange,
-  filter,
+  chains,
   disabled = false,
   error,
 }: ChainSelectorProps) {
-  const chains = filter ? SUPPORTED_CHAINS.filter(filter) : SUPPORTED_CHAINS
-
-  const selectedChain = chains.find((c) => c.id === value)
+  const list = chains ?? getActiveChains()
+  const selectedChain = list.find((c) => c.id === value)
 
   return (
     <div className="w-full">
@@ -37,9 +36,9 @@ export function ChainSelector({
           disabled={disabled}
           className={`w-full px-4 py-2.5 pr-10 bg-surface-page border border-border rounded-sm text-primary appearance-none cursor-pointer focus:outline-none focus:border-phosphor focus:shadow-[0_0_0_1px_rgba(0,255,65,0.15)] transition-colors disabled:bg-surface disabled:cursor-not-allowed ${error ? 'border-accent-red' : ''}`}
         >
-          {chains.map((chain) => (
+          {list.map((chain) => (
             <option key={chain.id} value={chain.id}>
-              {chain.name} ({chain.tokenSymbol})
+              {chain.name} ({chain.nativeCurrency.symbol})
               {chain.isTestnet ? ' [Testnet]' : ''}
             </option>
           ))}

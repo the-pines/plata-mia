@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { type HistoryEntry, type HistoryStatus, TERMINAL_STATUSES } from '@/types/history'
+import { type HistoryEntry, type HistoryStatus } from '@/types/history'
 
 interface HistoryState {
   entries: HistoryEntry[]
@@ -79,7 +79,3 @@ export const useHistoryStore = create<HistoryState & HistoryActions>()((set, get
     set({ entries: [] })
   },
 }))
-
-export function getPendingCount(entries: HistoryEntry[]): number {
-  return entries.filter((e) => !TERMINAL_STATUSES.includes(e.status)).length
-}

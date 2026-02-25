@@ -8,6 +8,7 @@ interface TransferStatusProps {
   sourceTxHash?: string
   sourceExplorerUrl?: string
   destExplorerUrl?: string
+  signingDetail?: string
   error?: string
 }
 
@@ -22,9 +23,6 @@ const STATUS_STEPS_CROSS_CHAIN = [
   { key: 'signing', label: 'Signing' },
   { key: 'source_submitted', label: 'Source Submitted' },
   { key: 'source_finalized', label: 'Source Finalized' },
-  { key: 'hyperbridge_relaying', label: 'Relaying via Hyperbridge' },
-  { key: 'dest_finalized', label: 'Destination Finalized' },
-  { key: 'completed', label: 'Completed' },
 ] as const
 
 export function TransferStatus({
@@ -32,13 +30,14 @@ export function TransferStatus({
   isCrossChain,
   sourceTxHash,
   sourceExplorerUrl,
+  signingDetail,
   error,
 }: TransferStatusProps) {
   const steps = isCrossChain ? STATUS_STEPS_CROSS_CHAIN : STATUS_STEPS_SAME_CHAIN
 
   const currentStepIndex = steps.findIndex((s) => s.key === status)
   const isError = status === 'failed' || status === 'timeout'
-  const isComplete = status === 'completed'
+  const isComplete = status === 'completed' || (isCrossChain && status === 'source_finalized')
 
   return (
     <div className="space-y-4">
@@ -51,7 +50,7 @@ export function TransferStatus({
           <SpinnerIcon className="w-5 h-5 text-phosphor animate-spin" />
         )}
         <span className="font-medium text-primary text-xs uppercase tracking-wider text-glow">
-          {isError ? 'Transfer Failed' : isComplete ? 'Transfer Complete' : 'Processing...'}
+          {isError ? 'Transfer Failed' : isComplete ? (isCrossChain ? 'Transfer Submitted' : 'Transfer Complete') : 'Processing...'}
         </span>
       </div>
 
@@ -94,7 +93,7 @@ export function TransferStatus({
                         : 'text-tertiary'
                   }`}
                 >
-                  {step.label}
+                  {isActive && step.key === 'signing' && signingDetail ? signingDetail : step.label}
                 </span>
               </div>
             </div>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { ConnectButton } from '@/components/wallet'
-import { useWallet } from '@/hooks/useWallet'
 
 const WORD = 'plata_mia'
 const TYPE_SPEED = 120
@@ -10,13 +9,11 @@ const ERASE_SPEED = 80
 const PAUSE_FULL = 2000
 const PAUSE_EMPTY = 800
 
-function useTypewriter(active: boolean) {
+function useTypewriter() {
   const [text, setText] = useState('')
   const [erasing, setErasing] = useState(false)
 
   useEffect(() => {
-    if (!active) { setText(''); return }
-
     let timeout: ReturnType<typeof setTimeout>
 
     if (!erasing) {
@@ -34,31 +31,22 @@ function useTypewriter(active: boolean) {
     }
 
     return () => clearTimeout(timeout)
-  }, [active, text, erasing])
+  }, [text, erasing])
 
   return text
 }
 
 export function Header() {
-  const { isConnected } = useWallet()
-  const typed = useTypewriter(isConnected)
+  const typed = useTypewriter()
 
   return (
     <header className="border-b border-border px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        {isConnected ? (
-          <>
-            <span className="block w-1.5 h-1.5 rounded-full bg-phosphor dot-pulse" />
-            <span className="text-xs uppercase tracking-wider text-phosphor text-glow">
-              {typed}
-              <span className="animate-blink">_</span>
-            </span>
-          </>
-        ) : (
-          <span className="text-xs uppercase tracking-wider text-accent-red">
-            ○ locked
-          </span>
-        )}
+        <span className="block w-1.5 h-1.5 rounded-full bg-phosphor dot-pulse" />
+        <span className="text-xs uppercase tracking-wider text-phosphor text-glow">
+          {typed}
+          <span className="animate-blink">_</span>
+        </span>
       </div>
       <ConnectButton />
     </header>

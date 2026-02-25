@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card } from '@/components/ui'
+import { Card, TabBar } from '@/components/ui'
 import { useWallet } from '@/hooks/useWallet'
 import { hasStoredKeys } from '@/lib/keyStorage'
 import { RegisterFlow } from '@/components/receive/RegisterFlow'
@@ -41,29 +41,17 @@ export default function ReceivePage() {
 
   return (
     <div className="w-full space-y-6">
-      {view === 'register' && (
-        <>
-          <RegisterFlow onComplete={() => setView('scan')} />
-          <button
-            onClick={() => setView('scan')}
-            className="block w-full text-center text-xs uppercase tracking-wider text-tertiary hover:text-phosphor transition-colors py-2"
-          >
-            scan for payments
-          </button>
-        </>
-      )}
+      <TabBar
+        tabs={[
+          { key: 'scan', label: 'Scan' },
+          { key: 'register', label: 'Register' },
+        ]}
+        activeTab={view}
+        onChange={(key) => setView(key as 'scan' | 'register')}
+      />
 
-      {view === 'scan' && (
-        <>
-          <ScanFlow />
-          <button
-            onClick={() => setView('register')}
-            className="block w-full text-center text-xs uppercase tracking-wider text-tertiary hover:text-phosphor transition-colors py-2"
-          >
-            register new keys
-          </button>
-        </>
-      )}
+      {view === 'scan' && <ScanFlow />}
+      {view === 'register' && <RegisterFlow onComplete={() => setView('scan')} />}
     </div>
   )
 }

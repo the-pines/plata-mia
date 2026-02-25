@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { type StealthMetaAddress } from '@/services/registry'
 import { type TransferProgress } from '@/services/tokenGateway'
 import { type DerivedAddress } from '@plata-mia/stealth-core'
+import { getDefaultChain, getNativeSymbol } from '@/lib/config'
 
 type Step = 'lookup' | 'send' | 'transferring' | 'done'
 
@@ -13,6 +14,7 @@ interface SendState {
   amount: string
   sourceChainId: string
   destChainId: string
+  selectedTokenSymbol: string
   txHash: string
   transferProgress: TransferProgress | null
   loading: boolean
@@ -23,6 +25,7 @@ interface SendActions {
   setAmount: (amount: string) => void
   setSourceChainId: (id: string) => void
   setDestChainId: (id: string) => void
+  setSelectedTokenSymbol: (symbol: string) => void
   setLookupResult: (recipient: StealthMetaAddress, derivedAddress: DerivedAddress) => void
   startTransfer: () => void
   updateProgress: (progress: TransferProgress) => void
@@ -32,14 +35,16 @@ interface SendActions {
   reset: () => void
 }
 
+const defaultChain = getDefaultChain()
 const initialState: SendState = {
   step: 'lookup',
   hint: '',
   recipient: null,
   derivedAddress: null,
   amount: '',
-  sourceChainId: 'polkadot-hub-testnet',
-  destChainId: 'polkadot-hub-testnet',
+  sourceChainId: defaultChain.id,
+  destChainId: defaultChain.id,
+  selectedTokenSymbol: getNativeSymbol(defaultChain.id) ?? '',
   txHash: '',
   transferProgress: null,
   loading: false,
@@ -50,8 +55,11 @@ export const useSendStore = create<SendState & SendActions>()((set) => ({
 
   setHint: (hint) => set({ hint }),
   setAmount: (amount) => set({ amount }),
-  setSourceChainId: (id) => set({ sourceChainId: id }),
+  setSourceChainId: (id) => {
+    set({ sourceChainId: id, selectedTokenSymbol: getNativeSymbol(id) ?? '' })
+  },
   setDestChainId: (id) => set({ destChainId: id }),
+  setSelectedTokenSymbol: (symbol) => set({ selectedTokenSymbol: symbol }),
 
   setLookupResult: (recipient, derivedAddress) =>
     set({ recipient, derivedAddress, step: 'send' }),

@@ -5,8 +5,11 @@ import { Providers } from '@/providers/Providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Plata Mia - Stealth Payments',
+  title: 'PLATA_MIA',
   description: 'Privacy-preserving payments on Polkadot',
+  icons: {
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💸</text></svg>',
+  },
 }
 
 export default function RootLayout({
@@ -28,6 +31,7 @@ export default function RootLayout({
             <BottomNav />
           </div>
           <Toaster
+            position="top-center"
             toastOptions={{
               style: {
                 background: '#0A0F0A',
@@ -35,6 +39,8 @@ export default function RootLayout({
                 border: '1px solid #0D1A0D',
                 fontFamily: 'JetBrains Mono, monospace',
                 fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
               },
             }}
           />

@@ -24,6 +24,7 @@ export function ScanFlow() {
     spendingPubkey,
     hasKeys,
     keysLoaded,
+    showKeys,
     unlocking,
     unlockPassword,
     loading,
@@ -34,6 +35,7 @@ export function ScanFlow() {
     setSpendingPubkey,
     setUnlockPassword,
     setHasKeys,
+    setShowKeys,
     loadKeysFromStorage,
     setUnlocking,
     startScan,
@@ -135,7 +137,7 @@ export function ScanFlow() {
 
   return (
     <>
-      {isConnected && hasKeys && !keysLoaded && (
+      {isConnected && hasKeys && (
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-phosphor-muted rounded-sm flex items-center justify-center flex-shrink-0">
@@ -150,7 +152,7 @@ export function ScanFlow() {
               </p>
             </div>
           </div>
-          {walletType === 'polkadotjs' && (
+          {!keysLoaded && walletType === 'polkadotjs' && (
             <Input
               label="Encryption Password"
               type="password"
@@ -159,39 +161,73 @@ export function ScanFlow() {
               onChange={(e) => setUnlockPassword(e.target.value)}
             />
           )}
-          <Button variant="outline" onClick={handleUnlock} loading={unlocking} className="w-full">
-            {walletType === 'metamask' ? 'Sign & Unlock Keys' : 'Unlock Keys'}
+          <Button variant="outline" onClick={keysLoaded ? undefined : handleUnlock} loading={unlocking} disabled={keysLoaded} className={`w-full ${keysLoaded ? '!text-phosphor !border-phosphor !opacity-100' : ''}`}>
+            {keysLoaded ? (
+              <>
+                <svg className="w-4 h-4 mr-2 text-phosphor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Keys Unlocked
+              </>
+            ) : (
+              walletType === 'metamask' ? 'Sign & Unlock Keys' : 'Unlock Keys'
+            )}
           </Button>
         </Card>
       )}
 
-      <Card className="space-y-6">
-        <div className="space-y-4">
-          <Input
-            label="Viewing Secret (v)"
-            placeholder="Paste your viewing secret key (hex)"
-            value={viewingSecret}
-            onChange={(e) => setViewingSecret(e.target.value)}
-            className="text-sm"
-          />
+      <Card className="!p-0 overflow-hidden">
+        <button
+          onClick={() => setShowKeys(!showKeys)}
+          className="w-full flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-surface-hover transition-colors"
+        >
+          <span className="text-xs uppercase tracking-wider font-medium text-primary">See Registry Keys</span>
+          <span
+            className="text-tertiary text-[10px] transition-transform duration-200"
+            style={{ transform: showKeys ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          >
+            ▶
+          </span>
+        </button>
 
-          <Input
-            label="Spending Secret (s)"
-            placeholder="Paste your spending secret key (hex)"
-            value={spendingSecret}
-            onChange={(e) => setSpendingSecret(e.target.value)}
-            className="text-sm"
-          />
+        <div
+          className="grid transition-[grid-template-rows] duration-200 ease-out"
+          style={{ gridTemplateRows: showKeys ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="px-5 pb-5 space-y-6 border-t border-border">
+              <div className="pt-4 space-y-4">
+                <Input
+                  label="Viewing Secret (v)"
+                  placeholder="Paste your viewing secret key (hex)"
+                  value={viewingSecret}
+                  onChange={(e) => setViewingSecret(e.target.value)}
+                  className="text-sm"
+                />
 
-          <Input
-            label="Spending Public Key (S)"
-            placeholder="Paste your spending public key (hex)"
-            value={spendingPubkey}
-            onChange={(e) => setSpendingPubkey(e.target.value)}
-            className="text-sm"
-          />
+                <Input
+                  label="Spending Secret (s)"
+                  placeholder="Paste your spending secret key (hex)"
+                  value={spendingSecret}
+                  onChange={(e) => setSpendingSecret(e.target.value)}
+                  className="text-sm"
+                />
+
+                <Input
+                  label="Spending Public Key (S)"
+                  placeholder="Paste your spending public key (hex)"
+                  value={spendingPubkey}
+                  onChange={(e) => setSpendingPubkey(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+
+            </div>
+          </div>
         </div>
+      </Card>
 
+      <Card className="space-y-6">
         <Button onClick={handleScan} loading={loading} size="lg" className="w-full">
           {loading ? 'Scanning...' : 'Scan for Payments'}
         </Button>
@@ -235,11 +271,6 @@ export function ScanFlow() {
                     value={payment.derivedKey}
                   />
 
-                  <div className="p-3 bg-surface border border-border rounded-sm">
-                    <p className="text-xs text-secondary">
-                      <span className="font-medium text-primary">To spend:</span> Import this private key into MetaMask to access funds at the stealth address.
-                    </p>
-                  </div>
                 </div>
               ))}
             </div>
