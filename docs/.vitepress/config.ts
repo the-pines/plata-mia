@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/plata-mia/',
   title: 'PLATA_MIA - DOCS',
   titleTemplate: false,
   transformPageData(pageData) {
