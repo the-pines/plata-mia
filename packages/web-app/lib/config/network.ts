@@ -1,13 +1,10 @@
 import type { ChainConfig } from './types'
 import { ALL_CHAINS } from './chains'
+import { env } from './env'
 
 type Network = 'testnet' | 'mainnet'
 
-const raw = process.env.NEXT_PUBLIC_NETWORK ?? 'testnet'
-if (raw !== 'testnet' && raw !== 'mainnet') {
-  throw new Error(`Invalid NEXT_PUBLIC_NETWORK: "${raw}". Must be "testnet" or "mainnet".`)
-}
-export const NETWORK: Network = raw
+export const NETWORK: Network = env.NEXT_PUBLIC_NETWORK
 
 export function isTestnet(): boolean {
   return NETWORK === 'testnet'
@@ -76,14 +73,10 @@ export async function ensureMetaMaskChain(chain: ChainConfig): Promise<void> {
 export function getHyperbridgeIndexerUrl(): string {
   if (NETWORK === 'mainnet') {
     return (
-      process.env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER ??
-      'https://hyperbridge.indexer.polytope.technology'
+      env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER ?? 'https://hyperbridge.indexer.polytope.technology'
     )
   }
-  return (
-    process.env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER ??
-    'https://gargantua.indexer.polytope.technology'
-  )
+  return env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER ?? 'https://gargantua.indexer.polytope.technology'
 }
 
 export const HYPERBRIDGE_EXPLORER_URL = 'https://explorer.hyperbridge.network'

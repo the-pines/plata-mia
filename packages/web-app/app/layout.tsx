@@ -5,8 +5,11 @@ import { Providers } from '@/providers/Providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Plata Mia - Stealth Payments',
+  title: 'PLATA_MIA',
   description: 'Privacy-preserving payments on Polkadot',
+  icons: {
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💸</text></svg>',
+  },
 }
 
 export default function RootLayout({

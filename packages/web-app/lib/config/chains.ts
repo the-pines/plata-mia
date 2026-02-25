@@ -1,6 +1,7 @@
 import type { ChainConfig } from './types'
+import { env } from './env'
 
-const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? ''
+const ALCHEMY_KEY = env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? ''
 
 export const ALL_CHAINS: ChainConfig[] = [
   {
