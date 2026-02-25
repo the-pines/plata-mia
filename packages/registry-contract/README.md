@@ -1,6 +1,17 @@
-# Registry Contract
+# registry-contract
 
-Stealth meta-address registry for the Plata Mia protocol. Users register their public keys so senders can look up recipients and derive stealth addresses.
+On-chain stealth meta-address registry. Users register public keys so senders can look up recipients and derive stealth addresses.
+
+## Quick Start
+
+Requires [Foundry](https://book.getfoundry.sh/getting-started/installation).
+
+```bash
+cp .env.example .env              # add deployer private key
+make test                         # run tests
+make deploy-dry                   # simulate deployment
+make deploy                       # deploy to Polkadot Hub TestNet
+```
 
 ## Contract API
 
@@ -29,19 +40,14 @@ event ChainUpdated(bytes32 indexed identifier, uint32 oldChain, uint32 newChain)
 event NicknameUpdated(bytes32 indexed identifier, string oldNickname, string newNickname)
 ```
 
-## Scripts
+## Make Targets
 
-Requires [Foundry](https://book.getfoundry.sh/getting-started/installation).
-
-```bash
-cp .env.example .env   # add your deployer private key
 ```
-
-```bash
-make build          # compile
-make test           # run tests
-make deploy-dry     # simulate deployment
-make deploy         # deploy to Polkadot Hub TestNet
+make build          compile contracts
+make test           run tests (14 passing)
+make deploy-dry     simulate deployment
+make deploy         deploy to Polkadot Hub TestNet
+make clean          remove build artifacts
 ```
 
 ## Deployment

@@ -1,173 +1,106 @@
 # xx-proxy
 
-HTTP proxy for broadcasting stealth payment announcements via xx network's cMix protocol.
-
-## Overview
-
-xx-proxy provides a REST API layer for stealth payment announcement propagation through xx network, enabling private transaction notifications for the Plata Mia stealth payment system.
-
-**Key Features:**
-- Connects to xx network mainnet via cMix mixnet
-- Public broadcast channel for stealth payment announcements
-- Persistent storage for announcements and channel state
-- Rate limiting for abuse prevention
-- Configuration validation at startup
-
-## Architecture
+REST API for broadcasting stealth payment announcements through [xx network](https://xx.network/)'s cMix mixnet.
 
 ```
-┌─────────────┐     ┌───────────┐     ┌────────────┐
-│  Web App    │────▶│ xx-proxy  │────▶│ xx network │
-└─────────────┘     └───────────┘     └────────────┘
-      POST /announce      │                  │
-      GET /announcements  │◀─────────────────┘
-                          │   broadcast listener
+  Web App ──POST /announce──▶ xx-proxy ──broadcast──▶ xx network
+           GET /announcements◀─────────◀──listener───┘
 ```
 
 ## Quick Start
 
-### 1. Build
 ```bash
-go build -o server ./cmd/server
+cp .env.example .env              # set XX_CERT_PATH and XX_PASSWORD
+make run                          # build + start on :8080
 ```
 
-### 2. Get mainnet certificate
-Create `mainnet.crt` with the certificate from [deployment.go](https://github.com/Elixxir-io/client/blob/release/cmd/deployment.go) (look for `mainNetCert`).
+First run registers with the network (~10s). Subsequent starts reuse the session.
 
-### 3. Run
-```bash
-XX_CERT_PATH=./mainnet.crt \
-XX_PASSWORD=your-session-password \
-./server
+> **Certificate required** — create `mainnet.crt` from [deployment.go](https://github.com/Elixxir-io/client/blob/release/cmd/deployment.go) (`mainNetCert` constant).
+
+## Make Targets
+
 ```
-
-First run registers with the network (~10 seconds). Subsequent restarts load the existing session.
+make build          build binary
+make run            build + run (reads XX_CERT_PATH + XX_PASSWORD from shell)
+make run-env        build + run (loads .env file)
+make test           run tests
+make clean          remove binary
+make docker-build   build Docker image
+make docker-run     run container (reads .env, mounts cert + volumes)
+```
 
 ## Configuration
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `XX_CERT_PATH` | Yes | - | Path to mainnet certificate file |
-| `XX_PASSWORD` | Yes | - | Password for session encryption |
-| `XX_SESSION_DIR` | No | `./xx-session` | Directory for cMix session data |
+| `XX_CERT_PATH` | Yes | — | Path to mainnet certificate |
+| `XX_PASSWORD` | Yes | — | Session encryption password |
+| `XX_SESSION_DIR` | No | `./xx-session` | cMix session data |
 | `XX_CHANNEL_NAME` | No | `platamiaannouncements` | Broadcast channel name |
-| `XX_CHANNEL_PRINT` | No | - | Pre-generated channel PrettyPrint |
-| `XX_CHANNEL_FILE` | No | `./channel.txt` | File to persist channel PrettyPrint |
-| `XX_DATA_PATH` | No | `./data` | Directory for announcement storage |
-| `PORT` | No | `8080` | HTTP server port |
-| `CORS_ORIGINS` | No | `http://localhost:3000` | Comma-separated allowed origins |
-| `ANNOUNCE_RATE_LIMIT` | No | `10` | Max announcements per second |
+| `XX_CHANNEL_PRINT` | No | — | Pre-generated channel PrettyPrint |
+| `XX_CHANNEL_FILE` | No | `./channel.txt` | Persisted channel PrettyPrint |
+| `XX_DATA_PATH` | No | `./data` | Announcement storage |
+| `PORT` | No | `8080` | HTTP port |
+| `CORS_ORIGINS` | No | `http://localhost:3000` | Allowed origins (comma-separated) |
+| `ANNOUNCE_RATE_LIMIT` | No | `10` | Max announces/sec |
 
-## API Reference
+## API
 
-### Health Check
-```
-GET /health
-```
-Returns connection status to xx network.
+### `GET /health`
 
-**Response:**
 ```json
-{"status": "healthy", "connected": true}
+{ "status": "healthy", "connected": true }
 ```
 
-### Post Announcement
-```
-POST /announce
-Content-Type: application/json
-```
-Broadcasts a stealth payment announcement to the network.
+### `POST /announce`
 
-**Request:**
 ```json
-{
-  "r": "0102030405060708091011121314151617181920212223242526272829303132",
-  "viewTag": 42,
-  "blockHint": 12345
-}
+{ "r": "0102...3132", "viewTag": 42, "blockHint": 12345 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `r` | string | 32-byte hex-encoded ephemeral public key |
-| `viewTag` | uint8 | View tag for efficient scanning |
-| `blockHint` | uint64 | Block number hint for the transaction |
+| `r` | `string` | 32-byte hex ephemeral public key |
+| `viewTag` | `uint8` | View tag for scanning |
+| `blockHint` | `uint64` | Block number hint |
 
-**Response:**
-```json
-{"success": true}
-```
+→ `{ "success": true }` or `429` with `{ "success": false, "error": "rate limit exceeded" }`
 
-**Rate Limited Response (429):**
-```json
-{"success": false, "error": "rate limit exceeded"}
-```
+### `GET /announcements?since=<ms>`
 
-### Get Announcements
-```
-GET /announcements?since=<timestamp>
-```
-Retrieves announcements from storage.
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `since` | int64 | Unix timestamp (ms) to filter results (optional) |
-
-**Response:**
 ```json
 {
-  "announcements": [{
-    "r": "0102030405060708091011121314151617181920212223242526272829303132",
-    "viewTag": 42,
-    "blockHint": 12345,
-    "receivedAt": 1770162296286
-  }],
+  "announcements": [{ "r": "...", "viewTag": 42, "blockHint": 12345, "receivedAt": 1770162296286 }],
   "count": 1
 }
 ```
 
 ## Wire Format
 
-Announcements are serialized to 42 bytes for network transmission:
+42 bytes per announcement:
 
 ```
-[1 byte: version] [32 bytes: R] [1 byte: viewTag] [8 bytes: blockHint BE]
+[1B version] [32B R] [1B viewTag] [8B blockHint BE]
 ```
 
 ## Docker
 
 ```bash
-docker build -t xx-proxy .
-docker run -d \
-  -v /path/to/mainnet.crt:/app/mainnet.crt:ro \
-  -v xx-proxy-session:/app/xx-session \
-  -v xx-proxy-data:/app/data \
-  -e XX_CERT_PATH=/app/mainnet.crt \
-  -e XX_PASSWORD=your-password \
-  -e CORS_ORIGINS=https://your-domain.com \
-  -p 8080:8080 \
-  xx-proxy
+make docker-build
+make docker-run
 ```
 
-**Volume mounts are required** for session and data persistence. The container uses named volumes to store:
-- `xx-proxy-session` - cMix network session (identity, keys)
-- `xx-proxy-data` - Announcements and channel state
+Volumes mount automatically for session and data persistence. For production, set `CORS_ORIGINS` in `.env`.
 
 ## Persistence
 
-**Channel State:** The channel PrettyPrint is saved to `XX_CHANNEL_FILE` on first creation and loaded on subsequent restarts. This ensures consistent channel identity across deployments.
+**Channel** — PrettyPrint saved to `XX_CHANNEL_FILE`, restored on restart for consistent identity.
 
-**Announcements:** All received announcements are persisted to `XX_DATA_PATH/announcements.txt` and restored on startup.
+**Announcements** — append-only log at `XX_DATA_PATH/announcements.txt`, loaded into memory on startup.
 
-## Operational Notes
+## Notes
 
-- `ERROR logs about "Failed to register node"` are expected - xx network is distributed and some nodes may be temporarily unavailable
-- Session data in `XX_SESSION_DIR` should be backed up for continuity
-- For production, mount persistent volumes for `/app/data` and `/app/xx-session`
-
-## References
-
-- [xx Network SDK](https://pkg.go.dev/gitlab.com/elixxir/client)
-- [xxDK Examples](https://git.xx.network/elixxir/xxdk-examples)
-- [xx Network](https://xx.network/)
+- `"Failed to register node"` errors are expected — xx network nodes may be temporarily unavailable
+- Back up `XX_SESSION_DIR` for session continuity
+- For production, use Docker with persistent volumes for `/app/data` and `/app/xx-session`

@@ -1,48 +1,31 @@
 # stealth-core
 
-TypeScript library implementing secp256k1 stealth address cryptography for EVM chains.
+secp256k1 stealth address cryptography for EVM chains.
 
-## Install
-
-```bash
-pnpm add @plata-mia/stealth-core
 ```
-
-## Test
-
-```bash
+pnpm add @plata-mia/stealth-core
 pnpm test
 ```
 
 ## API
 
-### Key Generation
-
 ```typescript
+// Key generation
 generateSpendingKeyPair(): KeyPair
 generateViewingKeyPair(): KeyPair
 createStealthMetaAddress(spending: KeyPair, viewing: KeyPair, preferredChain: ChainId): StealthMetaAddress
-```
 
-### Stealth Operations
-
-```typescript
-// Sender: derive one-time stealth address for payment
+// Sender — derive one-time stealth address
 deriveStealthAddress(spendingPubkey: Uint8Array, viewingPubkey: Uint8Array): DerivedAddress
 
-// Receiver: scan an announcement for a match
+// Receiver — scan announcement for match
 scanAnnouncement(viewingSecret: Uint8Array, spendingPubkey: Uint8Array, ephemeralPubkey: Uint8Array, viewTag: number): ScanResult | null
 
-// Receiver: derive private key to spend from stealth address
+// Receiver — derive private key to spend
 deriveSpendingKey(spendingSecret: Uint8Array, viewingSecret: Uint8Array, ephemeralPubkey: Uint8Array): Uint8Array
 
-// View tag computation (first byte of shared secret hash)
+// Utilities
 computeViewTag(sharedSecret: Uint8Array): number
-```
-
-### EVM Encoding
-
-```typescript
 pubkeyToAddress(compressedPubkey: Uint8Array): `0x${string}`
 pubkeyToBytes32(compressedPubkey: Uint8Array): `0x${string}`
 bytes32ToPubkey(bytes32: `0x${string}`): Uint8Array
@@ -55,12 +38,8 @@ hexToBytes(hex: string): Uint8Array
 
 ```typescript
 import {
-  generateSpendingKeyPair,
-  generateViewingKeyPair,
-  createStealthMetaAddress,
-  deriveStealthAddress,
-  scanAnnouncement,
-  deriveSpendingKey,
+  generateSpendingKeyPair, generateViewingKeyPair, createStealthMetaAddress,
+  deriveStealthAddress, scanAnnouncement, deriveSpendingKey,
 } from '@plata-mia/stealth-core'
 
 // Bob generates keys and publishes meta-address
@@ -70,18 +49,15 @@ const meta = createStealthMetaAddress(spending, viewing, 'polkadot')
 
 // Alice derives stealth address and sends payment
 const derived = deriveStealthAddress(meta.spendingPubkey, meta.viewingPubkey)
-// Alice sends funds to derived.address
-// Alice publishes { R: derived.ephemeralPubkey, viewTag: derived.viewTag }
+// → sends funds to derived.address
+// → publishes { R: derived.ephemeralPubkey, viewTag: derived.viewTag }
 
 // Bob scans announcement
 const result = scanAnnouncement(viewing.secret, spending.pubkey, derived.ephemeralPubkey, derived.viewTag)
 if (result) {
   const key = deriveSpendingKey(spending.secret, viewing.secret, derived.ephemeralPubkey)
-  // Bob uses key to sign txs from the stealth address
+  // Bob signs txs from the stealth address with key
 }
 ```
 
-## Dependencies
-
-- `@noble/curves` — secp256k1 ECDH
-- `@noble/hashes` — keccak_256
+Built on [@noble/curves](https://github.com/paulmillr/noble-curves) (secp256k1 ECDH) and [@noble/hashes](https://github.com/paulmillr/noble-hashes) (keccak_256).

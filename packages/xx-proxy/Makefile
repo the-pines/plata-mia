@@ -2,23 +2,22 @@
 
 BIN := server
 
-# Build the server binary
 build:
 	go build -o $(BIN) ./cmd/server
 
-# Run locally (requires .env or exported vars)
 run: build
-	./$(BIN)
+	XX_CERT_PATH=./mainnet.crt XX_PASSWORD=$${XX_PASSWORD:?set XX_PASSWORD} ./$(BIN)
 
-# Run tests
+run-env: build
+	@test -f .env || (echo "missing .env — cp .env.example .env" && exit 1)
+	set -a && . ./.env && set +a && ./$(BIN)
+
 test:
 	go test ./...
 
-# Remove build artifacts
 clean:
 	rm -f $(BIN)
 
-# Docker
 docker-build:
 	docker build -t xx-proxy .
 
