@@ -3,10 +3,10 @@
 Privacy-preserving stealth payments across EVM chains. Recipients register secp256k1 keys on-chain, senders derive one-time stealth addresses locally and transfer tokens single or cross-chain via Hyperbridge. Payment announcements propagate through xx-network's cMix mixnet so only the recipient can detect incoming funds.
 
 <p>
-  <img src="docs/screenshots/receive.png" width="24%" />
-  <img src="docs/screenshots/send-lookup.png" width="24%" />
-  <img src="docs/screenshots/register.png" width="24%" />
-  <img src="docs/screenshots/send-transfer.png" width="24%" />
+  <img src="public/screenshots/receive.png" width="24%" />
+  <img src="public/screenshots/send-lookup.png" width="24%" />
+  <img src="public/screenshots/register.png" width="24%" />
+  <img src="public/screenshots/send-transfer.png" width="24%" />
 </p>
 
 ## Environment
