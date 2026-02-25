@@ -1,3 +1,4 @@
 {
+  "installCommand": "pnpm install",
   "buildCommand": "pnpm --filter @plata-mia/stealth-core build && next build"
 }
