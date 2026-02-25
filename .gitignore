@@ -1,12 +1,7 @@
 # Local documentation
 CLAUDE.md
-TECHNICAL_SPEC.md
-EXECUTION_PLAN.md
-packages/*/TASKS.md
 
-packages/*/README.md
-!packages/stealth-core/README.md
-!packages/registry-contract/README.md
+
 
 # Dependencies
 node_modules/
@@ -60,6 +55,3 @@ secrets/
 
 # Git worktrees
 *-worktree/
-
-# Task files
-TASK_*.md
