@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @plata-mia/stealth-core build && pnpm --filter web-app build",
+  "buildCommand": "pnpm --filter @plata-mia/stealth-core build && pnpm --filter @plata-mia/web-app build",
   "outputDirectory": "packages/web-app/.next",
   "installCommand": "pnpm install"
 }
