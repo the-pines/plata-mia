@@ -1,0 +1,217 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --vp-font-family-base: 'JetBrains Mono', monospace;
+  --vp-font-family-mono: 'JetBrains Mono', monospace;
+
+  /* Light mode: strong green needs darker variant for contrast */
+  --vp-c-brand-1: #007A1F;
+  --vp-c-brand-2: #009926;
+  --vp-c-brand-3: #005C17;
+  --vp-c-brand-soft: rgba(0, 122, 31, 0.10);
+}
+
+/* Light mode heading contrast */
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3 {
+  color: var(--vp-c-text-1) !important;
+}
+
+:root .vp-doc a {
+  color: #007A1F;
+}
+
+:root .VPNavBar .title {
+  color: #007A1F !important;
+  text-shadow: none;
+}
+
+.dark {
+  --vp-c-bg: #050805;
+  --vp-c-bg-alt: #0A0F0A;
+  --vp-c-bg-elv: #0A0F0A;
+  --vp-c-bg-soft: #0F160F;
+
+  --vp-c-text-1: #E8E4DE;
+  --vp-c-text-2: #B0A89E;
+  --vp-c-text-3: #6B6560;
+
+  --vp-c-brand-1: #00FF41;
+  --vp-c-brand-2: #33FF66;
+  --vp-c-brand-3: #00CC33;
+  --vp-c-brand-soft: rgba(0, 255, 65, 0.10);
+
+  --vp-c-border: #0D1A0D;
+  --vp-c-divider: #0D1A0D;
+  --vp-c-gutter: #0D1A0D;
+
+  --vp-sidebar-bg-color: #050805;
+  --vp-nav-bg-color: #050805;
+
+  --vp-code-block-bg: #0A0F0A;
+  --vp-code-color: #00FF41;
+
+  --vp-c-tip-1: #00FF41;
+  --vp-c-tip-2: rgba(0, 255, 65, 0.10);
+  --vp-c-tip-3: rgba(0, 255, 65, 0.10);
+  --vp-c-tip-soft: rgba(0, 255, 65, 0.06);
+
+  --vp-c-warning-1: #FFAA00;
+  --vp-c-warning-soft: rgba(255, 170, 0, 0.08);
+
+  --vp-c-danger-1: #FF3333;
+  --vp-c-danger-soft: rgba(255, 51, 51, 0.08);
+}
+
+.dark .vp-doc h1,
+.dark .vp-doc h2,
+.dark .vp-doc h3 {
+  color: #E8E4DE !important;
+}
+
+.dark .vp-doc a {
+  color: #00FF41;
+}
+
+.dark .VPNavBar .title {
+  color: #00FF41 !important;
+  text-shadow: 0 0 4px rgba(0, 255, 65, 0.5);
+}
+
+::selection {
+  background: rgba(0, 255, 65, 0.30);
+  color: #050805;
+}
+
+/* Logo: hide default title text, typewriter replaces it */
+.VPNavBar .VPNavBarTitle .title {
+  font-size: 0 !important;
+}
+
+/* Typewriter container in navbar */
+.typewriter-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dark .typewriter-logo {
+  color: #00FF41;
+  text-shadow: 0 0 4px rgba(0, 255, 65, 0.5);
+}
+
+.typewriter-logo {
+  color: #007A1F;
+}
+
+.typewriter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00FF41;
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+
+:root .typewriter-dot {
+  background: #007A1F;
+  animation: none;
+}
+
+.typewriter-cursor {
+  animation: blink 1s step-end infinite;
+}
+
+/* Search bar: right-aligned and wider */
+.VPNavBar .content {
+  justify-content: flex-end !important;
+}
+
+.VPNavBar .content .search {
+  flex-grow: 0 !important;
+  padding-left: 0 !important;
+}
+
+.VPNavBar .DocSearch-Button,
+.VPNavBar .VPNavBarSearch button,
+.VPNavBarSearchButton {
+  min-width: 280px !important;
+}
+
+.DocSearch-Button {
+  display: flex !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+.DocSearch-Button-Container {
+  flex-shrink: 0;
+}
+
+.DocSearch-Button-Keys {
+  margin-left: auto !important;
+}
+
+.VPNav,
+.VPSidebar {
+  border-color: #0D1A0D !important;
+}
+
+.dark a:hover {
+  color: #00FF41 !important;
+}
+
+.dark .vp-doc a:hover {
+  text-shadow: 0 0 4px rgba(0, 255, 65, 0.5);
+}
+
+.vp-doc a {
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050805;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0D1A0D;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1A3A1A;
+}
+
+/* Animations */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes dot-pulse {
+  0%, 100% {
+    box-shadow: 0 0 2px rgba(0, 255, 65, 0.4), 0 0 6px rgba(0, 255, 65, 0.15);
+    opacity: 0.7;
+  }
+  50% {
+    box-shadow: 0 0 4px rgba(0, 255, 65, 0.7), 0 0 12px rgba(0, 255, 65, 0.3);
+    opacity: 1;
+  }
+}
+
+@keyframes text-glow {
+  0%, 100% {
+    text-shadow: 0 0 4px rgba(0, 255, 65, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 8px rgba(0, 255, 65, 0.6), 0 0 16px rgba(0, 255, 65, 0.2);
+  }
+}

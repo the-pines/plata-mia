@@ -18,7 +18,8 @@ build/
 target/
 .next/
 out/
-.vitepress/cache/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
 
 # Environment files
 .env
