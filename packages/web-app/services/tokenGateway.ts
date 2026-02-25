@@ -16,6 +16,7 @@ export interface TransferProgress {
   status: TransferStatus
   txHash?: string
   requestId?: string
+  detail?: string
   error?: string
   sourceBlockNumber?: number
   destBlockNumber?: number
@@ -28,7 +29,6 @@ export interface TeleportParams {
   recipient: string
   amount: bigint
   assetId?: string
-  redeem?: boolean
   timeout?: number
 }
 
@@ -188,7 +188,7 @@ export class TokenGatewayService {
     console.log('[teleport] wrapping', amount.toString(), 'wei to WETH')
 
     // Step 1: Wrap ETH → WETH
-    onProgress?.({ status: 'signing' })
+    onProgress?.({ status: 'signing', detail: 'Signing WETH Wrap' })
     const wrapHash = await walletClient.writeContract({
       account,
       address: wethAddress,
@@ -209,6 +209,7 @@ export class TokenGatewayService {
     }
 
     // Step 2: Approve gateway to spend WETH
+    onProgress?.({ status: 'signing', detail: 'Signing WETH Approval' })
     console.log('[teleport] approving gateway to spend WETH')
     const approveWethHash = await walletClient.writeContract({
       account,
@@ -229,6 +230,7 @@ export class TokenGatewayService {
     }
 
     // Step 3: Approve gateway to spend fee token (dispatch fee)
+    onProgress?.({ status: 'signing', detail: 'Signing Fee Approval' })
     const feeApproveAmount = BigInt(10e18)
     console.log('[teleport] approving gateway to spend fee token:', feeTokenAddress)
     const approveUsdhHash = await walletClient.writeContract({
@@ -250,12 +252,13 @@ export class TokenGatewayService {
     }
 
     // Step 4: Teleport
+    onProgress?.({ status: 'signing', detail: 'Signing Teleport' })
     const destStateMachineId = this.encodeStateMachineId(destChain)
     const teleportParams = {
       amount,
       relayerFee: BigInt(1e18),
       assetId,
-      redeem: params.redeem ?? false,
+      redeem: false,
       to: this.encodeRecipientToBytes32(recipient),
       dest: destStateMachineId,
       timeout: BigInt(timeout),

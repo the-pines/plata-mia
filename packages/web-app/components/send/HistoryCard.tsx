@@ -96,7 +96,7 @@ export function HistoryCard({ entry }: HistoryCardProps) {
   const isCrossChain = entry.transferType === 'cross-chain'
   const isTestnet = sourceChain?.isTestnet || destChain?.isTestnet || false
   const bridgeExplorerLink = getHyperbridgeExplorerLink(entry.commitmentHash, isTestnet)
-  const isActive = !isTerminal && (entry.status === 'pending' || entry.status === 'relaying')
+  const isActive = !isTerminal && (entry.status === 'pending' || entry.status === 'relaying' || (isCrossChain && entry.status === 'source_finalized'))
 
   return (
     <Card className="!p-0 overflow-hidden">
@@ -105,7 +105,11 @@ export function HistoryCard({ entry }: HistoryCardProps) {
         className="w-full flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-surface-hover transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${isTerminal ? config.dot : 'bg-phosphor'} ${isActive ? 'animate-flicker' : ''}`} />
+          {isActive ? (
+            <Spinner className="w-4 h-4 text-phosphor shrink-0" />
+          ) : (
+            <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${config.dot}`} />
+          )}
           <span className="font-medium text-primary">
             {entry.amount} {entry.tokenSymbol}
           </span>

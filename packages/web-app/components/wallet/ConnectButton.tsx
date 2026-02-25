@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useWallet, truncateAddress } from '@/hooks/useWallet'
-import { type WalletType } from '@/stores/walletStore'
+import { useWalletStore, type WalletType } from '@/stores/walletStore'
 import { Button } from '@/components/ui'
 import { WalletModal } from './WalletModal'
+import { showError } from '@/lib/toast'
 
 function WalletIcon({ type }: { type: WalletType }) {
   if (type === 'metamask') {
@@ -31,7 +32,6 @@ export function ConnectButton() {
     walletType,
     isConnecting,
     isConnected,
-    error,
     disconnect,
     connectMetaMask,
     connectPolkadotJs,
@@ -58,6 +58,8 @@ export function ConnectButton() {
     } else if (type === 'polkadotjs') {
       await connectPolkadotJs()
     }
+    const { error: connectError } = useWalletStore.getState()
+    if (connectError) showError(connectError)
     setShowModal(false)
   }
 
@@ -104,16 +106,9 @@ export function ConnectButton() {
 
   return (
     <>
-      <div className="flex flex-col items-end gap-1">
-        <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>
-          Connect
-        </Button>
-        {error && (
-          <span className="text-xs text-accent-red max-w-[200px] text-right">
-            {error}
-          </span>
-        )}
-      </div>
+      <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>
+        Connect
+      </Button>
       <WalletModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
