@@ -28,6 +28,7 @@ export interface TeleportParams {
   recipient: string
   amount: bigint
   assetId?: string
+  redeem?: boolean
   timeout?: number
 }
 
@@ -35,6 +36,7 @@ export interface TeleportResult {
   txHash: string
   requestId: string
   commitmentHash?: string
+  sourceBlockNumber?: number
 }
 
 // Token Gateway ABI – verified against 0xFcDa26cA021d5535C3059547390E6cCd8De7acA6 (Sepolia)
@@ -89,9 +91,6 @@ const ERC20_APPROVE_ABI = [
     stateMutability: 'nonpayable',
   },
 ] as const
-
-// USD.h fee token on Sepolia (ERC6160 HyperFungibleToken)
-const USDH_ADDRESS = '0xa801da100bf16d07f668f4a49e1f71fc54d05177' as const
 
 export class TokenGatewayService {
   private queryClient: IndexerQueryClient
@@ -165,7 +164,12 @@ export class TokenGatewayService {
     const [account] = await walletClient.requestAddresses()
     if (!account) throw new Error('No account connected')
 
+    if (!sourceChain.feeTokenAddress) {
+      throw new Error(`Fee token address not configured for ${sourceChain.name}`)
+    }
+
     const gatewayAddress = sourceChain.gatewayAddress as `0x${string}`
+    const feeTokenAddress = sourceChain.feeTokenAddress as `0x${string}`
     const assetId = keccak256(toHex('WETH'))
 
     // Look up the WETH address registered on the gateway
@@ -224,34 +228,34 @@ export class TokenGatewayService {
       throw new Error(`WETH approve reverted (${approveWethHash})`)
     }
 
-    // Step 3: Approve gateway to spend USD.h (dispatch fee token)
-    const usdhApproveAmount = BigInt(10e18) // 10 USD.h — covers many teleports
-    console.log('[teleport] approving gateway to spend USD.h for fees')
+    // Step 3: Approve gateway to spend fee token (dispatch fee)
+    const feeApproveAmount = BigInt(10e18)
+    console.log('[teleport] approving gateway to spend fee token:', feeTokenAddress)
     const approveUsdhHash = await walletClient.writeContract({
       account,
-      address: USDH_ADDRESS,
+      address: feeTokenAddress,
       abi: ERC20_APPROVE_ABI,
       functionName: 'approve',
-      args: [gatewayAddress, usdhApproveAmount],
+      args: [gatewayAddress, feeApproveAmount],
       chain,
     })
 
-    console.log('[teleport] USD.h approve tx:', approveUsdhHash)
+    console.log('[teleport] fee token approve tx:', approveUsdhHash)
     const approveUsdhReceipt = await publicClient.waitForTransactionReceipt({
       hash: approveUsdhHash,
       timeout: 120_000,
     })
     if (approveUsdhReceipt.status === 'reverted') {
-      throw new Error(`USD.h approve reverted (${approveUsdhHash})`)
+      throw new Error(`Fee token approve reverted (${approveUsdhHash})`)
     }
 
     // Step 4: Teleport
     const destStateMachineId = this.encodeStateMachineId(destChain)
     const teleportParams = {
       amount,
-      relayerFee: BigInt(0),
+      relayerFee: BigInt(1e18),
       assetId,
-      redeem: false,
+      redeem: params.redeem ?? false,
       to: this.encodeRecipientToBytes32(recipient),
       dest: destStateMachineId,
       timeout: BigInt(timeout),
@@ -298,6 +302,7 @@ export class TokenGatewayService {
     })
 
     // Extract commitment hash from the PostRequestEvent in the receipt
+    const sourceBlockNumber = Number(receipt.blockNumber)
     let commitmentHash: string | undefined
     try {
       const { getPostRequestEventFromTx, postRequestCommitment } = await import('@hyperbridge/sdk')
@@ -306,12 +311,14 @@ export class TokenGatewayService {
         const { commitment } = postRequestCommitment(event.args)
         commitmentHash = commitment
         console.log('[teleport] commitment hash:', commitmentHash)
+      } else {
+        console.error('[teleport] PostRequestEvent not found in tx receipt — status polling will not work')
       }
     } catch (err) {
-      console.warn('[teleport] failed to extract commitment:', err)
+      console.error('[teleport] failed to extract commitment — status polling will not work:', err)
     }
 
-    return { txHash, requestId: commitmentHash || txHash, commitmentHash }
+    return { txHash, requestId: commitmentHash || txHash, commitmentHash, sourceBlockNumber }
   }
 
   private async teleportFromSubstrate(

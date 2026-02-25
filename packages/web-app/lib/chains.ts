@@ -9,6 +9,8 @@ export interface ChainConfig {
   ss58Prefix?: number
   gatewayAddress?: string
   hostAddress?: string
+  feeTokenAddress?: string
+  consensusStateId?: string
   tokenSymbol: string
   tokenDecimals: number
   explorerUrl?: string
@@ -58,6 +60,9 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
       ? `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`
       : 'https://rpc.sepolia.org',
     gatewayAddress: GATEWAY_ADDRESSES.sepolia,
+    hostAddress: '0x2EdB74C269948b60ec1000040E104cef0eABaae8',
+    feeTokenAddress: '0xa801da100bf16d07f668f4a49e1f71fc54d05177',
+    consensusStateId: 'ETH0',
     tokenSymbol: 'ETH',
     tokenDecimals: 18,
     explorerUrl: 'https://sepolia.etherscan.io',
@@ -69,6 +74,10 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     type: 'evm',
     chainId: 420420417,
     rpcUrl: 'https://eth-rpc-testnet.polkadot.io',
+    gatewayAddress: '0x1c1e5be83df4a54c7a2230c337e4a3e8b7354b1c',
+    hostAddress: '0xbb26e04a71e7c12093e82b83ba310163eac186fa',
+    feeTokenAddress: '0x0dc440cf87830f0af564eb8b62b454b7e0c68a4b',
+    consensusStateId: 'PAS0',
     ss58Prefix: 42,
     tokenSymbol: 'PAS',
     tokenDecimals: 18,

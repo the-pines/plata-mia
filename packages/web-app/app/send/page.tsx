@@ -46,6 +46,7 @@ export default function SendPage() {
     amount,
     sourceChainId,
     destChainId,
+    redeem,
     txHash,
     transferProgress,
     loading,
@@ -53,6 +54,7 @@ export default function SendPage() {
     setAmount,
     setSourceChainId,
     setDestChainId,
+    setRedeem,
     setLookupResult,
     startTransfer,
     updateProgress,
@@ -165,15 +167,14 @@ export default function SendPage() {
             destChain,
             recipient: derivedAddress.address,
             amount: amountBigInt,
+            redeem,
           },
           (progress) => {
             updateProgress(progress)
           }
         )
 
-        const blockNumber = result.txHash
-          ? Math.floor(Date.now() / 1000)
-          : Math.floor(Date.now() / 1000)
+        const blockNumber = result.sourceBlockNumber ?? Math.floor(Date.now() / 1000)
         await publishAnnouncement(
           bytesToHex(derivedAddress.ephemeralPubkey.slice(1)),
           derivedAddress.viewTag,
@@ -355,11 +356,31 @@ export default function SendPage() {
                 />
 
                 {isCrossChain && (
-                  <div className="p-4 bg-accent-cyan-muted rounded-sm border border-accent-cyan/20">
-                    <p className="text-xs text-accent-cyan">
-                      This will use Hyperbridge to securely bridge your tokens. Transfer may take a few
-                      minutes.
-                    </p>
+                  <div className="space-y-4">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={redeem}
+                        onChange={(e) => setRedeem(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-accent-cyan rounded-sm border-border"
+                      />
+                      <div>
+                        <span className="text-xs uppercase tracking-wider text-primary group-hover:text-accent-cyan transition-colors">
+                          Redeem
+                        </span>
+                        <p className="text-xs text-secondary mt-0.5">
+                          Enable to receive the original ERC20 on the destination chain. Only works if the
+                          destination has custodied tokens from a previous bridge.
+                        </p>
+                      </div>
+                    </label>
+
+                    <div className="p-4 bg-accent-cyan-muted rounded-sm border border-accent-cyan/20">
+                      <p className="text-xs text-accent-cyan">
+                        This will use Hyperbridge to securely bridge your tokens. Transfer may take a few
+                        minutes.
+                      </p>
+                    </div>
                   </div>
                 )}
 

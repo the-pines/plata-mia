@@ -13,6 +13,7 @@ interface SendState {
   amount: string
   sourceChainId: string
   destChainId: string
+  redeem: boolean
   txHash: string
   transferProgress: TransferProgress | null
   loading: boolean
@@ -23,6 +24,7 @@ interface SendActions {
   setAmount: (amount: string) => void
   setSourceChainId: (id: string) => void
   setDestChainId: (id: string) => void
+  setRedeem: (redeem: boolean) => void
   setLookupResult: (recipient: StealthMetaAddress, derivedAddress: DerivedAddress) => void
   startTransfer: () => void
   updateProgress: (progress: TransferProgress) => void
@@ -40,6 +42,7 @@ const initialState: SendState = {
   amount: '',
   sourceChainId: 'polkadot-hub-testnet',
   destChainId: 'polkadot-hub-testnet',
+  redeem: false,
   txHash: '',
   transferProgress: null,
   loading: false,
@@ -52,6 +55,7 @@ export const useSendStore = create<SendState & SendActions>()((set) => ({
   setAmount: (amount) => set({ amount }),
   setSourceChainId: (id) => set({ sourceChainId: id }),
   setDestChainId: (id) => set({ destChainId: id }),
+  setRedeem: (redeem) => set({ redeem }),
 
   setLookupResult: (recipient, derivedAddress) =>
     set({ recipient, derivedAddress, step: 'send' }),
