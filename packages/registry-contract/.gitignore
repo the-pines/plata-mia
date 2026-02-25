@@ -1,6 +1,5 @@
-node_modules/
-artifacts/
+out/
 cache/
-deployments/
+lib/
+broadcast/
 .env
-log.md

@@ -38,8 +38,7 @@ export function ChainSelector({
         >
           {list.map((chain) => (
             <option key={chain.id} value={chain.id}>
-              {chain.name} ({chain.nativeCurrency.symbol})
-              {chain.isTestnet ? ' [Testnet]' : ''}
+              {chain.name}
             </option>
           ))}
         </select>
