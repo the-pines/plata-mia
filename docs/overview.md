@@ -2,6 +2,8 @@
 
 Plata Mia is a private payments app. It lets you send and receive tokens on EVM-compatible chains without exposing your financial activity on-chain.
 
+[Live app](https://plata-mia.vercel.app) | [GitHub](https://github.com/the-pines/plata-mia)
+
 Every payment goes to a unique, one-time address called a stealth address. Nobody — not even someone watching the blockchain — can link your payments together or trace them back to your identity.
 
 ## How It Works

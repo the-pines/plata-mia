@@ -89,6 +89,15 @@ export function ConnectButton() {
         </button>
         {showMenu && (
           <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-sm overflow-hidden z-50">
+            <a
+              href="https://the-pines.github.io/plata-mia/overview"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setShowMenu(false)}
+              className="block w-full px-4 py-2 text-xs uppercase tracking-wider text-primary hover:bg-surface-hover transition-colors text-left whitespace-nowrap"
+            >
+              docs
+            </a>
             <button
               onClick={() => {
                 disconnect()
