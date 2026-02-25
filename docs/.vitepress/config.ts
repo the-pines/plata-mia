@@ -1,0 +1,42 @@
+import { defineConfig } from 'vitepress'
+
+export default defineConfig({
+  title: 'PLATA_MIA - DOCS',
+  titleTemplate: false,
+  transformPageData(pageData) {
+    pageData.title = 'PLATA_MIA - DOCS'
+  },
+  description: 'Private payments using stealth addresses',
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💸</text></svg>' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    ['link', { href: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap', rel: 'stylesheet' }],
+  ],
+  themeConfig: {
+    nav: [],
+    search: {
+      provider: 'local',
+    },
+    sidebar: [
+      {
+        text: 'Getting Started',
+        items: [
+          { text: 'Overview', link: '/overview' },
+          { text: 'Application', link: '/application' },
+        ],
+      },
+      {
+        text: 'Deep Dive',
+        items: [
+          { text: 'Architecture', link: '/architecture' },
+          { text: 'Stealth Addresses', link: '/stealth-addresses' },
+        ],
+      },
+    ],
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/nicov90/plata-mia' },
+    ],
+  },
+  appearance: 'dark',
+})
