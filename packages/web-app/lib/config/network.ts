@@ -73,7 +73,7 @@ export async function ensureMetaMaskChain(chain: ChainConfig): Promise<void> {
 export function getHyperbridgeIndexerUrl(): string {
   if (NETWORK === 'mainnet') {
     return (
-      env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER ?? 'https://hyperbridge.indexer.polytope.technology'
+      env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER ?? 'https://nexus.indexer.polytope.technology'
     )
   }
   return env.NEXT_PUBLIC_HYPERBRIDGE_INDEXER ?? 'https://gargantua.indexer.polytope.technology'
