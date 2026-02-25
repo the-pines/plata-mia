@@ -76,7 +76,7 @@ export const ALL_CHAINS: ChainConfig[] = [
   },
   {
     id: 'sepolia',
-    name: 'Sepolia',
+    name: 'Ethereum Sepolia',
     type: 'evm',
     chainId: 11155111,
     rpcUrl: ALCHEMY_KEY
@@ -146,7 +146,7 @@ export const ALL_CHAINS: ChainConfig[] = [
   },
   {
     id: 'polkadot-hub-testnet',
-    name: 'Polkadot Hub TestNet',
+    name: 'Polkadot Paseo Hub',
     type: 'evm',
     chainId: 420420417,
     rpcUrl: 'https://eth-rpc-testnet.polkadot.io',

@@ -1,86 +1,51 @@
 # Registry Contract
 
-A stealth meta-address registry for the Plata Mia protocol. Users register their stealth payment credentials, allowing senders to look up recipients and generate stealth addresses.
+Stealth meta-address registry for the Plata Mia protocol. Users register their public keys so senders can look up recipients and derive stealth addresses.
 
-## Contract Interface
+## Contract API
 
-### Functions
+```solidity
+// Register a new stealth meta-address (reverts IdentifierAlreadyRegistered if taken)
+function register(bytes32 identifier, bytes32 spendingKey, bytes32 viewingKey, uint32 preferredChain, string nickname) external
 
-| Function | Description |
-|----------|-------------|
-| `register(identifier, spendingKey, viewingKey, preferredChain, nickname)` | Register a new stealth meta-address |
-| `lookup(identifier)` | Retrieve a registered stealth meta-address |
-| `getOwner(identifier)` | Get the owner of a registration |
-| `updatePreferredChain(identifier, newChain)` | Update preferred chain (owner only) |
-| `updateNickname(identifier, newNickname)` | Update nickname (owner only) |
+// Look up by identifier (returns exists = false if not found)
+function lookup(bytes32 identifier) external view returns (bytes32 spendingKey, bytes32 viewingKey, uint32 preferredChain, string nickname, bool exists)
 
-### Events
+// Get registration owner (address(0) if not registered)
+function getOwner(bytes32 identifier) external view returns (address)
 
-- `Registered` - Emitted when a new address is registered
-- `ChainUpdated` - Emitted when preferred chain changes
-- `NicknameUpdated` - Emitted when nickname changes
+// Update preferred chain (owner only, reverts NotOwner / NotFound)
+function updatePreferredChain(bytes32 identifier, uint32 newChain) external
+
+// Update nickname (owner only, reverts NotOwner / NotFound)
+function updateNickname(bytes32 identifier, string newNickname) external
+```
+
+## Events
+
+```solidity
+event Registered(bytes32 indexed identifier, address indexed owner, bytes32 spendingKey, bytes32 viewingKey, uint32 preferredChain, string nickname)
+event ChainUpdated(bytes32 indexed identifier, uint32 oldChain, uint32 newChain)
+event NicknameUpdated(bytes32 indexed identifier, string oldNickname, string newNickname)
+```
+
+## Scripts
+
+Requires [Foundry](https://book.getfoundry.sh/getting-started/installation).
+
+```bash
+cp .env.example .env   # add your deployer private key
+```
+
+```bash
+make build          # compile
+make test           # run tests
+make deploy-dry     # simulate deployment
+make deploy         # deploy to Polkadot Hub TestNet
+```
 
 ## Deployment
 
 | Network | Chain ID | Address |
 |---------|----------|---------|
 | Polkadot Hub TestNet | 420420417 | `0x47568470D89CD2Ea20553ffB08bD630BC95FE4bB` |
-
-## Local Development
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Setup
-
-```bash
-cd solidity
-npm install
-```
-
-### Run Tests
-
-```bash
-npm test
-```
-
-### Compile
-
-```bash
-npm run compile
-```
-
-### Deploy
-
-1. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-2. Add your seed phrase to `.env`:
-```
-DEPLOYER_SURI="your twelve word seed phrase here"
-```
-
-3. Get testnet tokens from [Polkadot Faucet](https://faucet.polkadot.io/)
-   - Network: Polkadot testnet (Paseo)
-   - Chain: AssetHub
-
-4. Deploy:
-```bash
-npm run deploy
-```
-
-## Network Configuration
-
-Add to MetaMask:
-
-| Field | Value |
-|-------|-------|
-| Network Name | Polkadot Hub TestNet |
-| RPC URL | `https://eth-rpc-testnet.polkadot.io` |
-| Chain ID | `420420417` |
-| Symbol | `PAS` |
-| Explorer | `https://blockscout-testnet.polkadot.io` |

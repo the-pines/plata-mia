@@ -1,39 +1,54 @@
 # stealth-core
 
-TypeScript library implementing sr25519 stealth address cryptography for Polkadot.
+TypeScript library implementing secp256k1 stealth address cryptography for EVM chains.
 
-## Installation
+## Install
 
 ```bash
-npm install @plata-mia/stealth-core
+pnpm add @plata-mia/stealth-core
 ```
 
 ## Test
 
 ```bash
-npm test
+pnpm test
 ```
 
 ## API
 
+### Key Generation
+
 ```typescript
-// Key generation
-function generateSpendingKeyPair(): KeyPair
-function generateViewingKeyPair(): KeyPair
-function createStealthMetaAddress(spending: KeyPair, viewing: KeyPair, preferredChain: ChainId): StealthMetaAddress
+generateSpendingKeyPair(): KeyPair
+generateViewingKeyPair(): KeyPair
+createStealthMetaAddress(spending: KeyPair, viewing: KeyPair, preferredChain: ChainId): StealthMetaAddress
+```
 
-// Sender: derive stealth address for payment
-function deriveStealthAddress(spendingPubkey: Uint8Array, viewingPubkey: Uint8Array, networkId?: number): DerivedAddress
+### Stealth Operations
 
-// Receiver: scan announcements for payments
-function scanAnnouncement(viewingSecret: Uint8Array, spendingPubkey: Uint8Array, ephemeralPubkey: Uint8Array, viewTag: number, networkId?: number): ScanResult | null
+```typescript
+// Sender: derive one-time stealth address for payment
+deriveStealthAddress(spendingPubkey: Uint8Array, viewingPubkey: Uint8Array): DerivedAddress
 
-// Receiver: derive key to spend from stealth address
-function deriveSpendingKey(spendingSecret: Uint8Array, viewingSecret: Uint8Array, ephemeralPubkey: Uint8Array): Uint8Array
+// Receiver: scan an announcement for a match
+scanAnnouncement(viewingSecret: Uint8Array, spendingPubkey: Uint8Array, ephemeralPubkey: Uint8Array, viewTag: number): ScanResult | null
 
-// Utilities
-function encodeAddress(pubkey: Uint8Array, networkId?: number): string
-function decodeAddress(address: string): [Uint8Array, number]
+// Receiver: derive private key to spend from stealth address
+deriveSpendingKey(spendingSecret: Uint8Array, viewingSecret: Uint8Array, ephemeralPubkey: Uint8Array): Uint8Array
+
+// View tag computation (first byte of shared secret hash)
+computeViewTag(sharedSecret: Uint8Array): number
+```
+
+### EVM Encoding
+
+```typescript
+pubkeyToAddress(compressedPubkey: Uint8Array): `0x${string}`
+pubkeyToBytes32(compressedPubkey: Uint8Array): `0x${string}`
+bytes32ToPubkey(bytes32: `0x${string}`): Uint8Array
+isValidEvmAddress(address: string): boolean
+bytesToHex(bytes: Uint8Array): string
+hexToBytes(hex: string): Uint8Array
 ```
 
 ## Usage
@@ -46,35 +61,27 @@ import {
   deriveStealthAddress,
   scanAnnouncement,
   deriveSpendingKey,
-} from '@plata-mia/stealth-core';
+} from '@plata-mia/stealth-core'
 
 // Bob generates keys and publishes meta-address
-const spending = generateSpendingKeyPair();
-const viewing = generateViewingKeyPair();
-const metaAddress = createStealthMetaAddress(spending, viewing, 'asset-hub-polkadot');
+const spending = generateSpendingKeyPair()
+const viewing = generateViewingKeyPair()
+const meta = createStealthMetaAddress(spending, viewing, 'polkadot')
 
 // Alice derives stealth address and sends payment
-const payment = deriveStealthAddress(metaAddress.spendingPubkey, metaAddress.viewingPubkey);
-// Alice sends funds to payment.address
-// Alice publishes { R: payment.ephemeralPubkey, viewTag: payment.viewTag }
+const derived = deriveStealthAddress(meta.spendingPubkey, meta.viewingPubkey)
+// Alice sends funds to derived.address
+// Alice publishes { R: derived.ephemeralPubkey, viewTag: derived.viewTag }
 
-// Bob scans announcements
-const result = scanAnnouncement(viewing.secret, spending.pubkey, payment.ephemeralPubkey, payment.viewTag);
+// Bob scans announcement
+const result = scanAnnouncement(viewing.secret, spending.pubkey, derived.ephemeralPubkey, derived.viewTag)
 if (result) {
-  // Payment found at result.address
-  const key = deriveSpendingKey(spending.secret, viewing.secret, payment.ephemeralPubkey);
-  // Bob uses key to sign transactions from the stealth address
+  const key = deriveSpendingKey(spending.secret, viewing.secret, derived.ephemeralPubkey)
+  // Bob uses key to sign txs from the stealth address
 }
 ```
 
 ## Dependencies
 
-- `@scure/sr25519` - sr25519 ECDH and HDKD
-- `@polkadot-labs/hdkd-helpers` - SS58 encoding
-- `@noble/hashes` - blake2b
-
-## Notes
-
-- **Spending secret**: Must be stored securely (controls funds)
-- **Viewing secret**: Can be shared with trusted parties (reveals payment history, not funds)
-- **View tag**: First byte of shared secret, filters 99.6% of non-matching announcements
+- `@noble/curves` — secp256k1 ECDH
+- `@noble/hashes` — keccak_256
