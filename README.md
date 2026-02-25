@@ -31,6 +31,12 @@ Privacy-preserving stealth payments across EVM chains. Recipients register secp2
 | [xx-proxy](packages/xx-proxy)                   | Go proxy for xx-network private announcements                                                                              |
 
 
+## Deployments
+
+| Contract | Network | Address |
+| --- | --- | --- |
+| Registry | Polkadot Paseo Hub | [`0x47568470D89CD2Ea20553ffB08bD630BC95FE4bB`](https://blockscout-paseo.parity-chains.parity.io/address/0x47568470D89CD2Ea20553ffB08bD630BC95FE4bB) |
+
 ## Local Development
 
 ### 1. xx-proxy (announcement backend)
