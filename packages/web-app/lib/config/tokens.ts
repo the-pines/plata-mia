@@ -28,6 +28,17 @@ const ERC20_ADDRESSES: Record<string, Record<string, `0x${string}`>> = {
     USDT: '0xdac17f958d2ee523a2206206994597c13d831ec7',
     DAI: '0x6b175474e89094c44da98b954eedeac495271d0f',
   },
+  sepolia: {
+    USDC: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Circle official
+    USDT: '0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0', // Aave faucet
+    DAI: '0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357',  // Aave faucet
+  },
+  'arbitrum-sepolia': {
+    USDC: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // Circle official
+  },
+  'optimism-sepolia': {
+    USDC: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // Circle official
+  },
 }
 
 export function getToken(symbol: string): TokenConfig | undefined {

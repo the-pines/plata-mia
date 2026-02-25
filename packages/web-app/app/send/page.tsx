@@ -31,7 +31,7 @@ import {
 } from '@/lib/config'
 import { showSuccess, showError, showLoading, dismissToast } from '@/lib/toast'
 import { useSendStore } from '@/stores/sendStore'
-import { useHistoryStore, getPendingCount } from '@/stores/historyStore'
+import { useHistoryStore } from '@/stores/historyStore'
 import { type HistoryEntry } from '@/types/history'
 import { SendHistory } from '@/components/send/SendHistory'
 import { useQueryClient } from '@tanstack/react-query'
@@ -76,7 +76,7 @@ export default function SendPage() {
   const destChain = getChain(destChainId) ?? null
   const selectedToken = getToken(selectedTokenSymbol) ?? null
   const isCrossChain = sourceChain && destChain && checkCrossChain(sourceChain, destChain)
-  const pendingCount = getPendingCount(entries)
+  const historyCount = entries.length
 
   useEffect(() => {
     if (account?.address) {
@@ -273,7 +273,6 @@ export default function SendPage() {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Transfer failed'
-      showError(errorMessage)
       failTransfer(errorMessage)
     }
   }
@@ -305,7 +304,7 @@ export default function SendPage() {
       <TabBar
         tabs={[
           { key: 'send', label: 'Send' },
-          { key: 'history', label: 'History', count: pendingCount },
+          { key: 'history', label: 'History', count: historyCount },
         ]}
         activeTab={activeTab}
         onChange={(key) => setActiveTab(key as 'send' | 'history')}

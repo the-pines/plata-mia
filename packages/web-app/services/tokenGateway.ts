@@ -82,16 +82,6 @@ const TOKEN_GATEWAY_ABI = [
   },
 ] as const
 
-const WETH9_ABI = [
-  {
-    name: 'deposit',
-    type: 'function',
-    inputs: [],
-    outputs: [],
-    stateMutability: 'payable',
-  },
-] as const
-
 const ERC20_APPROVE_ABI = [
   {
     name: 'approve',
@@ -249,64 +239,9 @@ export class TokenGatewayService {
     }
     const assetId = keccak256(toHex(token.assetId))
 
-    if (isNativeToken(sourceChain.id, token.symbol)) {
-      // Native token: wrap → approve → teleport
-      const wethAddress = await publicClient.readContract({
-        address: gateway.address,
-        abi: TOKEN_GATEWAY_ABI,
-        functionName: 'erc20',
-        args: [assetId],
-      })
+    const isNative = isNativeToken(sourceChain.id, token.symbol)
 
-      if (wethAddress === ZERO_ADDRESS) {
-        throw new Error(`${token.assetId} not registered on ${sourceChain.name} gateway`)
-      }
-
-      console.log(`[teleport] ${token.assetId} address:`, wethAddress)
-      console.log('[teleport] wrapping', amount.toString(), 'wei')
-
-      // Step 1: Wrap native → WETH
-      onProgress?.({ status: 'signing', detail: `Signing ${token.assetId} Wrap` })
-      const wrapHash = await walletClient.writeContract({
-        account,
-        address: wethAddress,
-        abi: WETH9_ABI,
-        functionName: 'deposit',
-        args: [],
-        value: amount,
-        chain,
-      })
-
-      console.log('[teleport] wrap tx:', wrapHash)
-      const wrapReceipt = await publicClient.waitForTransactionReceipt({
-        hash: wrapHash,
-        timeout: 120_000,
-      })
-      if (wrapReceipt.status === 'reverted') {
-        throw new Error(`${token.assetId} wrap reverted (${wrapHash})`)
-      }
-
-      // Step 2: Approve gateway to spend WETH
-      onProgress?.({ status: 'signing', detail: `Signing ${token.assetId} Approval` })
-      console.log(`[teleport] approving gateway to spend ${token.assetId}`)
-      const approveHash = await walletClient.writeContract({
-        account,
-        address: wethAddress,
-        abi: ERC20_APPROVE_ABI,
-        functionName: 'approve',
-        args: [gateway.address, amount],
-        chain,
-      })
-
-      console.log(`[teleport] ${token.assetId} approve tx:`, approveHash)
-      const approveReceipt = await publicClient.waitForTransactionReceipt({
-        hash: approveHash,
-        timeout: 120_000,
-      })
-      if (approveReceipt.status === 'reverted') {
-        throw new Error(`${token.assetId} approve reverted (${approveHash})`)
-      }
-    } else {
+    if (!isNative) {
       // ERC20 token: resolve address from gateway, then approve → teleport
       const erc20Address = await publicClient.readContract({
         address: gateway.address,
@@ -391,7 +326,7 @@ export class TokenGatewayService {
       abi: TOKEN_GATEWAY_ABI,
       functionName: 'teleport',
       args: [teleportParams],
-      value: 0n,
+      value: isNative ? amount : 0n,
       gas: 10_000_000n,
       chain,
     })

@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ALL_TOKENS, getChain, isNativeToken, isCrossChain as checkCrossChain } from '@/lib/config'
+import {
+  ALL_TOKENS,
+  getChain,
+  isNativeToken,
+  getTokenAddress,
+  isCrossChain as checkCrossChain,
+} from '@/lib/config'
 import { getTokenGatewayService, type TokenAvailability } from '@/services/tokenGateway'
 
 interface TokenSelectorProps {
@@ -11,6 +17,20 @@ interface TokenSelectorProps {
   onChange: (symbol: string) => void
   onAvailabilityChange?: (available: boolean) => void
   disabled?: boolean
+}
+
+function getSameChainAvailability(chainId: string): Record<string, TokenAvailability> {
+  const result: Record<string, TokenAvailability> = {}
+  for (const token of ALL_TOKENS) {
+    if (isNativeToken(chainId, token.symbol)) {
+      result[token.symbol] = { available: true }
+    } else if (getTokenAddress(chainId, token.symbol)) {
+      result[token.symbol] = { available: true }
+    } else {
+      result[token.symbol] = { available: false, reason: 'Not on this chain' }
+    }
+  }
+  return result
 }
 
 export function TokenSelector({
@@ -33,38 +53,35 @@ export function TokenSelector({
   const onAvailabilityChangeRef = useRef(onAvailabilityChange)
   onAvailabilityChangeRef.current = onAvailabilityChange
 
-  const notifyAvailability = useCallback((avail: Record<string, TokenAvailability>, selected: string, crossChain: boolean) => {
-    if (!crossChain) {
-      onAvailabilityChangeRef.current?.(true)
-      return
-    }
+  const notifyAvailability = useCallback((avail: Record<string, TokenAvailability>, selected: string) => {
     const status = avail[selected]
     onAvailabilityChangeRef.current?.(status?.available !== false)
   }, [])
 
   useEffect(() => {
     setAvailability({})
+    const checkId = ++checkRef.current
 
     if (!isCrossChain || !sourceChain || !destChain) {
-      notifyAvailability({}, value, false)
+      const sameChain = getSameChainAvailability(chainId)
+      setAvailability(sameChain)
+      notifyAvailability(sameChain, value)
       return
     }
 
-    const checkId = ++checkRef.current
     setChecking(true)
-
     const gateway = getTokenGatewayService()
     gateway.checkTokensAvailability(sourceChain, destChain, ALL_TOKENS).then((result) => {
       if (checkId !== checkRef.current) return
       setAvailability(result)
       setChecking(false)
-      notifyAvailability(result, value, true)
+      notifyAvailability(result, value)
     })
   }, [chainId, destChainId, isCrossChain, sourceChain, destChain, value, notifyAvailability])
 
   useEffect(() => {
-    notifyAvailability(availability, value, !!isCrossChain)
-  }, [value, availability, isCrossChain, notifyAvailability])
+    notifyAvailability(availability, value)
+  }, [value, availability, notifyAvailability])
 
   // Close on outside click
   useEffect(() => {
@@ -87,7 +104,7 @@ export function TokenSelector({
   const selectedToken = ALL_TOKENS.find((t) => t.symbol === value)
   const selectedIsNative = isNativeToken(chainId, value)
   const selectedStatus = availability[value]
-  const selectedUnavailable = isCrossChain && selectedStatus?.available === false
+  const selectedUnavailable = selectedStatus?.available === false
   const selectedChecking = isCrossChain && !selectedStatus && checking
 
   return (
@@ -142,7 +159,7 @@ export function TokenSelector({
               const isSelected = token.symbol === value
               const isNative = isNativeToken(chainId, token.symbol)
               const status = availability[token.symbol]
-              const isUnavailable = isCrossChain && status?.available === false
+              const isUnavailable = status?.available === false
               const isChecking = isCrossChain && !status && checking
 
               return (
