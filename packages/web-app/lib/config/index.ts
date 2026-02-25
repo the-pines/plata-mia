@@ -1,6 +1,6 @@
 export type { ChainConfig, TokenConfig, Gateway } from './types'
 export { ALL_CHAINS, getChain } from './chains'
-export { ALL_TOKENS, getToken, getNativeSymbol, isNativeToken, getTokenAddress } from './tokens'
+export { ALL_TOKENS, getToken, getNativeSymbol, isNativeToken, getTokenAddress, getTokenDecimals } from './tokens'
 export {
   NETWORK,
   isTestnet,

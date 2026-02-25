@@ -13,11 +13,13 @@ export const ALL_TOKENS: TokenConfig[] = [
 // Native token symbol for each chain
 const NATIVE_SYMBOL: Record<string, string> = {
   ethereum: 'ETH',
+  arbitrum: 'ETH',
+  optimism: 'ETH',
+  bsc: 'BNB',
   sepolia: 'ETH',
   'arbitrum-sepolia': 'ETH',
   'optimism-sepolia': 'ETH',
   'bsc-testnet': 'BNB',
-  'polkadot-hub': 'DOT',
   'polkadot-hub-testnet': 'PAS',
 }
 
@@ -27,6 +29,21 @@ const ERC20_ADDRESSES: Record<string, Record<string, `0x${string}`>> = {
     USDC: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
     USDT: '0xdac17f958d2ee523a2206206994597c13d831ec7',
     DAI: '0x6b175474e89094c44da98b954eedeac495271d0f',
+  },
+  arbitrum: {
+    USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+    USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+    DAI: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+  },
+  optimism: {
+    USDC: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
+    USDT: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
+    DAI: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+  },
+  bsc: {
+    USDC: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+    USDT: '0x55d398326f99059fF775485246999027B3197955',
+    DAI: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
   },
   sepolia: {
     USDC: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Circle official
@@ -56,4 +73,17 @@ export function isNativeToken(chainId: string, symbol: string): boolean {
 export function getTokenAddress(chainId: string, symbol: string): `0x${string}` | null | undefined {
   if (isNativeToken(chainId, symbol)) return null
   return ERC20_ADDRESSES[chainId]?.[symbol]
+}
+
+// Per-chain decimal overrides (only where they differ from global TokenConfig.decimals)
+const DECIMAL_OVERRIDES: Record<string, Record<string, number>> = {
+  bsc: { USDC: 18, USDT: 18 },
+  'bsc-testnet': { USDC: 18, USDT: 18 },
+}
+
+export function getTokenDecimals(chainId: string, symbol: string): number {
+  const override = DECIMAL_OVERRIDES[chainId]?.[symbol]
+  if (override !== undefined) return override
+  const token = ALL_TOKENS.find((t) => t.symbol === symbol)
+  return token?.decimals ?? 18
 }

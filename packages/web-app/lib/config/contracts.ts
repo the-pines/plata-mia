@@ -1,5 +1,5 @@
 import type { ChainConfig } from './types'
-import { getActiveChains, NETWORK } from './network'
+import { ALL_CHAINS } from './chains'
 
 export const REGISTRY_ABI = [
   {
@@ -58,8 +58,8 @@ export const REGISTRY_ABI = [
 ] as const
 
 export function getRegistryChain(): ChainConfig {
-  const chain = getActiveChains().find((c) => c.registryAddress)
-  if (!chain) throw new Error(`No chain with registry address for network: ${NETWORK}`)
+  const chain = ALL_CHAINS.find((c) => c.registryAddress)
+  if (!chain) throw new Error('No chain with registry address configured')
   return chain
 }
 

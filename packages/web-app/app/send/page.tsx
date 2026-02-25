@@ -23,6 +23,7 @@ import { parseUnits } from 'viem'
 import {
   getChain,
   getToken,
+  getTokenDecimals,
   isNativeToken,
   getTokenAddress,
   isCrossChain as checkCrossChain,
@@ -162,7 +163,8 @@ export default function SendPage() {
 
     try {
       await ensureMetaMaskChain(sourceChain)
-      const amountBigInt = parseUnits(amount, selectedToken.decimals)
+      const decimals = getTokenDecimals(sourceChainId, selectedToken.symbol)
+      const amountBigInt = parseUnits(amount, decimals)
 
       if (isCrossChain && sourceChain.gateway && destChain.gateway) {
         const gateway = getTokenGatewayService()
