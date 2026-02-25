@@ -5,7 +5,7 @@ import { Providers } from '@/providers/Providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'PLATA_MIA — Private Stealth Payments',
+  title: 'PLATA_MIA',
   description:
     'Send and receive tokens privately across EVM chains. Stealth addresses, Hyperbridge cross-chain transfers, and xx-network anonymous announcements.',
   icons: {
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL('https://plata-mia.vercel.app'),
   openGraph: {
-    title: 'PLATA_MIA — Private Stealth Payments',
+    title: 'PLATA_MIA',
     description:
       'Send and receive tokens privately across EVM chains. Stealth addresses, Hyperbridge cross-chain transfers, and xx-network anonymous announcements.',
     siteName: 'PLATA_MIA',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PLATA_MIA — Private Stealth Payments',
+    title: 'PLATA_MIA',
     description:
       'Send and receive tokens privately across EVM chains. Stealth addresses, Hyperbridge cross-chain transfers, and xx-network anonymous announcements.',
   },
