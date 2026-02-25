@@ -9,7 +9,7 @@ Privacy-preserving stealth payments across EVM chains. Recipients register secp2
   <img src="packages/web-app/public/screenshots/send-transfer.png" width="24%" />
 </p>
 
-[Live app](TODO) | [Docs](TODO)
+[Live app](https://plata-mia.vercel.app) | [Docs](https://the-pines.github.io/plata-mia/overview)
 
 ---
 
@@ -62,4 +62,4 @@ Connect MetaMask to a testnet (Ethereum Sepolia, Arbitrum Sepolia, Paseo Hub, et
 
 ---
 
-[Live app](TODO) | [Docs](TODO)
+[Live app](https://plata-mia.vercel.app) | [Docs](https://the-pines.github.io/plata-mia/overview)
